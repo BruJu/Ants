@@ -41,16 +41,36 @@
     const kd = 0.3;
 
     // Grid parameters
-    const constant_grid_size = 50;
+    const constant_grid_size = 20;
     const initial_elements = [
-      { color: 'red' , size: 200 },
-      { color: 'blue', size: 200 },
-      { color: 'green', size: 50 }
+      { color: 'red' , size: 50 },
+      { color: 'blue', size: 25 },
+      { color: 'green', size: 0 }
     ];
 
-    const number_of_agents = 5;
+    const number_of_agents = 10;
 
-    const time_between_each_iteration = 10 / number_of_agents;
+    const time_between_each_iteration = 1;
+
+// Stolen here:  https://stackoverflow.com/questions/2450954/how-to-randomize-shuffle-a-javascript-array
+    function shuffle(array) {
+  var currentIndex = array.length, temporaryValue, randomIndex;
+
+  // While there remain elements to shuffle...
+  while (0 !== currentIndex) {
+
+    // Pick a remaining element...
+    randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex -= 1;
+
+    // And swap it with the current element.
+    temporaryValue = array[currentIndex];
+    array[currentIndex] = array[randomIndex];
+    array[randomIndex] = temporaryValue;
+  }
+
+  return array;
+}
 
     /*************
      * CLASS     *
@@ -69,7 +89,7 @@
       }
 
       see_item(item) {
-        while (this.memory.length >= constant_t) {
+        while (this.memory.length + 1 >= constant_t) {
           this.memory.shift();
         }
 
@@ -81,7 +101,7 @@
 
       count_item_occurences(item_kind) {
         let c = 0;
-        this.memory.forEach(function (item_kiind) {
+        this.memory.forEach(function (seen_kind) {
           if (seen_kind == item_kind) {
             c++;
           }
@@ -211,7 +231,7 @@
       move_agent(x, y, direction) {
         let dest = this.compute_grid_destination(x, y, direction);
 
-        if (dest === null) {
+        if (dest == null) {
           return false;
         }
 
@@ -238,7 +258,7 @@
         let direction = Directions[Math.floor(Math.random() * 4)];
         let ant = this.ants[Math.floor(Math.random() * this.ants.length)]
 
-        for (let i = 0 ; i != 5 ; i++)
+        for (let i = 0 ; i != 2 ; i++)
           this.move_agent(ant.x, ant.y, direction);
         
         let cell_in_front = this.compute_grid_destination(ant.x, ant.y, direction);
@@ -249,19 +269,46 @@
         let front_content = this.table[cell_in_front[2]];
 
         if (front_content != null && front_content.type == 'resource' && ant.heldItem == null) {
-          let f = count_item_occurences(front_content.color);
+          let f = ant.count_item_occurences(front_content.color);
           let pTake = Math.pow(kp / (kp + f), 2);
 
           if (Math.random() < pTake) {
-            // TODO : take
+            ant.heldItem = this.table[cell_in_front[2]];
+            this.table[cell_in_front[2]] = null;
           }
-        } else if (front_content == null) {
-          // TODO : put an item
+        } else if (ant.heldItem != null) {
+          let f = ant.count_item_occurences(ant.heldItem.color);
+          let pPut = Math.pow(f / (kd + f), 2);
+
+          if (Math.random() < pPut) {
+            shuffle(Directions);
+
+            let possible_directions = [];
+
+            for (let d = 0 ; d != 4 ; d++) {
+              let dir = Directions[d];
+
+              let cell_in_front = this.compute_grid_destination(ant.x, ant.y, dir);
+              if (cell_in_front == null) {
+                continue;
+              }
+
+              if (this.table[cell_in_front[2]] != null)
+                continue;
+
+              possible_directions.push(cell_in_front[2]);
+            }
+
+            if (possible_directions.length >= 2) {
+              let position = possible_directions[Math.floor(Math.random() * possible_directions.length)];
+              this.table[position] = ant.heldItem;
+              ant.heldItem = null;
+            }
+          }
         }
 
         ant.see_item(front_content);
       }
-
     };
 
 
