@@ -41,36 +41,42 @@
     const kd = 0.3;
 
     // Grid parameters
-    const constant_grid_size = 20;
+    const constant_grid_size = 50;
     const initial_elements = [
-      { color: 'red' , size: 50 },
-      { color: 'blue', size: 25 },
+      { color: 'red' , size: 200 },
+      { color: 'blue', size: 200 },
       { color: 'green', size: 0 }
     ];
 
-    const number_of_agents = 10;
+    const number_of_agents = 20;
 
     const time_between_each_iteration = 1;
 
-// Stolen here:  https://stackoverflow.com/questions/2450954/how-to-randomize-shuffle-a-javascript-array
+
+    /*************
+     * UTILS     *
+     *************/
+
     function shuffle(array) {
-  var currentIndex = array.length, temporaryValue, randomIndex;
+      // Stolen here:  https://stackoverflow.com/questions/2450954/how-to-randomize-shuffle-a-javascript-array
+      var currentIndex = array.length, temporaryValue, randomIndex;
 
-  // While there remain elements to shuffle...
-  while (0 !== currentIndex) {
+      // While there remain elements to shuffle...
+      while (0 !== currentIndex) {
 
-    // Pick a remaining element...
-    randomIndex = Math.floor(Math.random() * currentIndex);
-    currentIndex -= 1;
+        // Pick a remaining element...
+        randomIndex = Math.floor(Math.random() * currentIndex);
+        currentIndex -= 1;
 
-    // And swap it with the current element.
-    temporaryValue = array[currentIndex];
-    array[currentIndex] = array[randomIndex];
-    array[randomIndex] = temporaryValue;
-  }
+        // And swap it with the current element.
+        temporaryValue = array[currentIndex];
+        array[currentIndex] = array[randomIndex];
+        array[randomIndex] = temporaryValue;
+      }
 
-  return array;
-}
+      return array;
+    }
+
 
     /*************
      * CLASS     *
@@ -106,7 +112,7 @@
             c++;
           }
         });
-        return c;
+        return c * 1.0 / this.memory.length * 1.0;
       }
     };
     
@@ -258,7 +264,7 @@
         let direction = Directions[Math.floor(Math.random() * 4)];
         let ant = this.ants[Math.floor(Math.random() * this.ants.length)]
 
-        for (let i = 0 ; i != 2 ; i++)
+        for (let i = 0 ; i != 1 ; i++)
           this.move_agent(ant.x, ant.y, direction);
         
         let cell_in_front = this.compute_grid_destination(ant.x, ant.y, direction);
@@ -336,8 +342,6 @@
 
     grid.update_table();
 
-
-    let z = 0;
     let update_grid = function() {
       grid.move_an_ant();
       grid.update_table();
