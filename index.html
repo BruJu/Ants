@@ -242,11 +242,24 @@
           this.move_agent(ant.x, ant.y, direction);
         
         let cell_in_front = this.compute_grid_destination(ant.x, ant.y, direction);
-        let front_content = this.table[cell_in_front[2]];
-        if (front_content != null && front_content.type == 'resource' && ant.heldItem == null) {
-          
+        if (cell_in_front == null) {
+          return;
         }
 
+        let front_content = this.table[cell_in_front[2]];
+
+        if (front_content != null && front_content.type == 'resource' && ant.heldItem == null) {
+          let f = count_item_occurences(front_content.color);
+          let pTake = Math.pow(kp / (kp + f), 2);
+
+          if (Math.random() < pTake) {
+            // TODO : take
+          }
+        } else if (front_content == null) {
+          // TODO : put an item
+        }
+
+        ant.see_item(front_content);
       }
 
     };
