@@ -99,6 +99,7 @@
         this.heldItem = null;
         this.type = 'ant';
         this.memory = [];
+        console.log("Using Ants");
       }
 
       see_item(item) {
@@ -120,6 +121,53 @@
           }
         });
         return c * 1.0 / this.memory.length * 1.0;
+      }
+    };
+
+    let Ant_Vision = class {
+      constructor(grid, x, y) {
+        this.x = x;
+        this.y = y;
+        this.grid = grid;
+        this.heldItem = null;
+        this.type = 'ant';
+        this.memory = [];
+        console.log("Using Ants Visionss");
+      }
+
+      see_item(item) {
+        while (this.memory.length + 1 >= constant_t) {
+          this.memory.shift();
+        }
+
+        let around_items = this.grid.see_around(this.x, this.y);
+        let seens_items = [];
+        around_items.forEach(function (item) {
+          if (item != null) {
+            if (item.type == 'resource') {
+              seens_items.push(item.color);
+            } else {
+              seens_items.push(null);
+            }
+          }
+        })
+
+        this.memory.push(seens_items);
+      }
+
+      count_item_occurences(item_kind) {
+        let c = 0;
+        let number_of_elements = 0;
+        this.memory.forEach(function (seen_kinds) {
+          seen_kinds.forEach(function (seen_kind) {
+            if (seen_kind == item_kind) {
+              c++;
+            }
+            number_of_elements++;
+          });
+        });
+
+        return c * 1.0 / number_of_elements * 1.0;
       }
     };
     
@@ -211,7 +259,7 @@
         let x = available_position[0];
         let y = available_position[1];
 
-        let ant = new Ant(this, x, y);
+        let ant = new Ant_Vision(this, x, y);
 
         this.table[available_position[2]] = ant;
         this.ants.push(ant);
@@ -325,6 +373,19 @@
         }
 
         ant.see_item(front_content);
+      }
+
+      see_around(x, y) {
+        let seen_items = [];
+        let that = this;
+        Directions.forEach(function (direction) {
+          let dest_pos = that.compute_grid_destination(x, y, direction);
+          if (dest_pos != null) {
+            seen_items.push(that.table[dest_pos[2]]);
+          }
+        })
+
+        return seen_items;
       }
     };
 
