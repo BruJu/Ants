@@ -6,12 +6,19 @@
     <title>S M A</title>
 
     <style>
-      .red {      background-color: pink;   }
-      .blue {     background-color: lightblue;  }
-      .green {    background-color: lightgreen; }
+      .red {      background-color: red;   }
+      .blue {     background-color: blue;  }
+      .green {    background-color: green; }
 
       .ant {
-        background-color: black;
+        background-color: lightgrey;
+      }
+
+      .ant_red {
+        background-color: pink;
+      }
+      .ant_blue {
+        background-color: lightblue;
       }
 
       table, td, tr {
@@ -36,7 +43,7 @@
 
     // Ants parameters
     const constant_t = 10; // Memory size of ants
-    const constant_pas = 1; // Maximum size of ant move
+    const constant_pas = 5; // Maximum size of ant move
     const kp = 0.1;
     const kd = 0.3;
 
@@ -45,12 +52,12 @@
     const initial_elements = [
       { color: 'red' , size: 200 },
       { color: 'blue', size: 200 },
-      { color: 'green', size: 0 }
+      { color: 'green', size: 100 }
     ];
 
     const number_of_agents = 20;
 
-    const time_between_each_iteration = 1;
+    const time_between_each_iteration = 1.0 / 1000;
 
 
     /*************
@@ -166,6 +173,10 @@
                 require_class = cell_content.color;
               } else if (cell_content.type == 'ant') {
                 require_class = 'ant';
+
+                if (cell_content.heldItem != null) {
+                  require_class = require_class + "_" + cell_content.heldItem.color;
+                }
               }
             }
 
@@ -264,7 +275,7 @@
         let direction = Directions[Math.floor(Math.random() * 4)];
         let ant = this.ants[Math.floor(Math.random() * this.ants.length)]
 
-        for (let i = 0 ; i != 1 ; i++)
+        for (let i = 0 ; i != constant_pas ; i++)
           this.move_agent(ant.x, ant.y, direction);
         
         let cell_in_front = this.compute_grid_destination(ant.x, ant.y, direction);
@@ -343,14 +354,20 @@
     grid.update_table();
 
     let update_grid = function() {
+      for (let s = 0 ; s != 5000 ; s++) {
       grid.move_an_ant();
+    }
       grid.update_table();
+
+      window.requestAnimationFrame(update_grid);
     }
 
+/*
     setInterval(
       update_grid, time_between_each_iteration
     );
-
+*/
+window.requestAnimationFrame(update_grid);
 
   </script>
 </html>
