@@ -1,0 +1,292 @@
+<!doctype HTML>
+<html>
+  <head>
+    <script src="https://ajax.aspnetcdn.com/ajax/jQuery/jquery-3.4.1.min.js"></script>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>S M A</title>
+
+    <style>
+      .red {      background-color: pink;   }
+      .blue {     background-color: lightblue;  }
+      .green {    background-color: lightgreen; }
+
+      .ant {
+        background-color: black;
+      }
+
+      table, td, tr {
+        border-collapse: collapse;
+        border: 1px black solid;
+      }
+
+      td {
+        width: 10px;
+        height: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <table id="SMA">
+    </table>
+  </body>
+  <script>
+    /*************
+     * CONSTANTS *
+     *************/
+
+    // Ants parameters
+    const constant_t = 10; // Memory size of ants
+    const constant_pas = 1; // Maximum size of ant move
+    const kp = 0.1;
+    const kd = 0.3;
+
+    // Grid parameters
+    const constant_grid_size = 50;
+    const initial_elements = [
+      { color: 'red' , size: 200 },
+      { color: 'blue', size: 200 },
+      { color: 'green', size: 50 }
+    ];
+
+    const number_of_agents = 5;
+
+    const time_between_each_iteration = 10 / number_of_agents;
+
+    /*************
+     * CLASS     *
+     *************/
+
+    let Directions = ["Left", "Right", "Up", "Down"];
+
+    let Ant = class {
+      constructor(grid, x, y) {
+        this.x = x;
+        this.y = y;
+        this.grid = grid;
+        this.heldItem = null;
+        this.type = 'ant';
+        this.memory = [];
+      }
+
+      see_item(item) {
+        while (this.memory.length >= constant_t) {
+          this.memory.shift();
+        }
+
+        if (item != null && item.type == "resource")
+          this.memory.push(item.color);
+        else
+          this.memory.push("None");
+      }
+
+      count_item_occurences(item_kind) {
+        let c = 0;
+        this.memory.forEach(function (item_kiind) {
+          if (seen_kind == item_kind) {
+            c++;
+          }
+        });
+        return c;
+      }
+    };
+    
+    let Grid = class {
+      constructor(rowNumber, columnNumber) {
+        this.rowNumber = rowNumber;
+        this.columnNumber = columnNumber;
+
+        // Build inner representation
+        this.table = [];
+        for (let i = 0 ; i != this.rowNumber ; i++) {
+          for (let j = 0 ; j != this.columnNumber ; j++) {
+            this.table.push(null);
+          }
+        }
+
+        // Ant list
+        this.ants = [];
+
+        // Build dom table
+        let table = document.getElementById("SMA");
+        table.innerHTML = "";
+        
+        for (let i = 0 ; i != rowNumber ; i++) {
+          let row = table.insertRow(i);
+          
+          for (let j = 0 ; j != columnNumber ; j++) {
+            let cell = row.insertCell(j);
+            cell.id = "cell_" + i + "_" + j;
+            cell.className = "";
+          }
+        }
+      }
+
+      cell_position(i, j) {
+        return i * this.columnNumber + j;
+      }
+
+      update_table() {
+        for (let i = 0 ; i != this.rowNumber ; i++) {
+          for (let j = 0 ; j != this.columnNumber ; j++) {
+            let cell_name = "cell_" + i + "_" + j;
+            let cell = document.getElementById(cell_name);
+            let require_class = "";
+
+            let cell_content = this.table[this.cell_position(i, j)];
+            if (cell_content === null) {
+              require_class = "";
+            } else {
+              if (cell_content.type == 'resource') {
+                require_class = cell_content.color;
+              } else if (cell_content.type == 'ant') {
+                require_class = 'ant';
+              }
+            }
+
+            cell.className = require_class;
+          }
+        }
+      }
+
+      find_an_available_position() {
+        let i, j;
+
+        while (true) {
+          i = Math.floor(Math.random() * this.rowNumber);
+          j = Math.floor(Math.random() * this.columnNumber);
+
+          let pos = this.cell_position(i, j);
+
+          if (this.table[pos] == null) {
+            return [i, j, pos];
+          }
+        }
+      }
+
+      put_element(element_id) {
+        let available_position = this.find_an_available_position();
+        this.table[available_position[2]] = element_id;
+      }
+
+      put_an_ant() {
+        let available_position = this.find_an_available_position();
+        
+        let x = available_position[0];
+        let y = available_position[1];
+
+        let ant = new Ant(this, x, y);
+
+        this.table[available_position[2]] = ant;
+        this.ants.push(ant);
+      }
+
+      compute_grid_destination(x, y, direction) {
+        let xdest = x;
+        let ydest = y;
+        
+        switch (direction) {
+          case "Left":
+            if (x == 0) return null;
+            xdest = x - 1;
+            break;
+          case "Right":
+            if (x == this.columnNumber - 1) return null;
+            xdest = x + 1;
+            break;
+          case "Up":
+            if (y == 0) return null;
+            ydest = y - 1;
+            break;
+          case "Down":
+          default:
+            if (y == this.rowNumber - 1) return null;
+            ydest = y + 1;
+            break;
+        }
+
+        let dest_pos = this.cell_position(xdest, ydest);
+        return [xdest, ydest, dest_pos];
+      }
+
+      move_agent(x, y, direction) {
+        let dest = this.compute_grid_destination(x, y, direction);
+
+        if (dest === null) {
+          return false;
+        }
+
+        let dest_x = dest[0];
+        let dest_y = dest[1];
+        let dest_pos = dest[2];
+
+        let init_pos = this.cell_position(x, y);
+
+        if (this.table[dest_pos] != null) {
+          return false;
+        }
+
+        this.table[dest_pos] = this.table[init_pos];
+        this.table[init_pos] = null;
+
+        this.table[dest_pos].x = dest_x;
+        this.table[dest_pos].y = dest_y;
+
+        return true;
+      }
+
+      move_an_ant() {
+        let direction = Directions[Math.floor(Math.random() * 4)];
+        let ant = this.ants[Math.floor(Math.random() * this.ants.length)]
+
+        for (let i = 0 ; i != 5 ; i++)
+          this.move_agent(ant.x, ant.y, direction);
+        
+        let cell_in_front = this.compute_grid_destination(ant.x, ant.y, direction);
+        let front_content = this.table[cell_in_front[2]];
+        if (front_content != null && front_content.type == 'resource' && ant.heldItem == null) {
+          
+        }
+
+      }
+
+    };
+
+
+    /******************
+     * GRID CONSTRUCT *
+     ******************/
+
+    let grid = new Grid(constant_grid_size, constant_grid_size);
+
+    initial_elements.forEach(function (element) {
+      let color = element.color;
+      let size = element.size;
+
+      for (let i = 0 ; i != size ; i++) {
+        grid.put_element({
+          type: 'resource',
+          color: color
+        });
+      }
+    });
+
+    for (let i = 0 ; i != number_of_agents ; i++) {
+      grid.put_an_ant();
+    }
+
+    grid.update_table();
+
+
+    let z = 0;
+    let update_grid = function() {
+      grid.move_an_ant();
+      grid.update_table();
+    }
+
+    setInterval(
+      update_grid, time_between_each_iteration
+    );
+
+
+  </script>
+</html>
