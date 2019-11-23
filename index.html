@@ -1,7 +1,6 @@
 <!doctype HTML>
 <html>
   <head>
-    <script src="https://ajax.aspnetcdn.com/ajax/jQuery/jquery-3.4.1.min.js"></script>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <title>S M A</title>
 
@@ -43,22 +42,23 @@
 
     // Ants parameters
     const constant_t = 10; // Memory size of ants
-    const constant_pas = 5; // Maximum size of ant move
+    const constant_pas = 1; // Maximum size of ant move
     const kp = 0.1;
     const kd = 0.3;
 
     // Grid parameters
     const constant_grid_size = 50;
     const initial_elements = [
-      { color: 'red' , size: 200 },
+      { color: 'red' , size: 208 },
       { color: 'blue', size: 200 },
-      { color: 'green', size: 100 }
+      { color: 'green', size: 0 }
     ];
 
     const number_of_agents = 20;
 
-    const time_between_each_iteration = 1.0 / 1000;
+    const NUMBER_OF_STEPS_PER_DISPLAY = 500;
 
+    const past_elements_nerf_constant = 0.7;
 
     /*************
      * UTILS     *
@@ -90,6 +90,15 @@
      *************/
 
     let Directions = ["Left", "Right", "Up", "Down"];
+    function opposite_direction(direction) {
+      switch (direction) {
+        case "Left": return "Right";
+        case "Right": return "Left";
+        case "Up": return "Down";
+        case "Down": return "Up";
+        default: return null;
+      }
+    }
 
     let Ant = class {
       constructor(grid, x, y) {
@@ -99,7 +108,6 @@
         this.heldItem = null;
         this.type = 'ant';
         this.memory = [];
-        console.log("Using Ants");
       }
 
       see_item(item) {
@@ -128,11 +136,12 @@
       constructor(grid, x, y) {
         this.x = x;
         this.y = y;
+        this.last_direction = null;
         this.grid = grid;
         this.heldItem = null;
         this.type = 'ant';
         this.memory = [];
-        console.log("Using Ants Visionss");
+        this.see_around_method = "AROUND";
       }
 
       see_item(item) {
@@ -140,7 +149,7 @@
           this.memory.shift();
         }
 
-        let around_items = this.grid.see_around(this.x, this.y);
+        let around_items = this.grid.see_around(this.x, this.y, this.see_around_method, constant_t);
         let seens_items = [];
         around_items.forEach(function (item) {
           if (item != null) {
@@ -159,6 +168,8 @@
         let c = 0;
         let number_of_elements = 0;
         this.memory.forEach(function (seen_kinds) {
+          c = c * past_elements_nerf_constant;
+          number_of_elements = number_of_elements * past_elements_nerf_constant;
           seen_kinds.forEach(function (seen_kind) {
             if (seen_kind == item_kind) {
               c++;
@@ -323,6 +334,7 @@
         let direction = Directions[Math.floor(Math.random() * 4)];
         let ant = this.ants[Math.floor(Math.random() * this.ants.length)]
 
+        ant.last_direction = direction;
         for (let i = 0 ; i != constant_pas ; i++)
           this.move_agent(ant.x, ant.y, direction);
         
@@ -375,15 +387,42 @@
         ant.see_item(front_content);
       }
 
-      see_around(x, y) {
+      see_around(x, y, method, step) {
         let seen_items = [];
         let that = this;
-        Directions.forEach(function (direction) {
-          let dest_pos = that.compute_grid_destination(x, y, direction);
-          if (dest_pos != null) {
-            seen_items.push(that.table[dest_pos[2]]);
-          }
-        })
+
+        if (method == "AROUND") {
+          Directions.forEach(function (direction) {
+            let dest_pos = that.compute_grid_destination(x, y, direction);
+            if (dest_pos != null) {
+              seen_items.push(that.table[dest_pos[2]]);
+            }
+          })
+        } else if (method == "FRONT_SIDE") {
+          let ant = this.table[this.cell_position(x, y)];
+          let opposite = opposite_direction(ant.last_direction);
+          
+          Directions.forEach(function (direction) {
+            if (direction == opposite) {
+              return;
+            }
+
+            let local_x = x;
+            let local_y = y;
+
+            for (let s = 0 ; s != step ; s++) {
+              let dest_pos = that.compute_grid_destination(local_x, local_y, direction);
+              if (dest_pos == null) {
+                break;
+              }
+
+              seen_items.push(that.table[dest_pos[2]]);
+
+              local_x = dest_pos[0];
+              local_y = dest_pos[1];
+            }
+          });
+        }
 
         return seen_items;
       }
@@ -415,20 +454,17 @@
     grid.update_table();
 
     let update_grid = function() {
-      for (let s = 0 ; s != 5000 ; s++) {
-      grid.move_an_ant();
-    }
-      grid.update_table();
+      if (grid != null) {
+        for (let s = 0 ; s != NUMBER_OF_STEPS_PER_DISPLAY * number_of_agents ; s++) {
+          grid.move_an_ant();
+        }
+        grid.update_table();
 
-      window.requestAnimationFrame(update_grid);
+        window.requestAnimationFrame(update_grid);
+      }
     }
 
-/*
-    setInterval(
-      update_grid, time_between_each_iteration
-    );
-*/
-window.requestAnimationFrame(update_grid);
+    window.requestAnimationFrame(update_grid);
 
   </script>
 </html>
