@@ -31,11 +31,16 @@
       }
 
       #parameters {
-        border: 1px black solid;
-        width: 200px;
+        width: 250px;
         display: inline-block;
         vertical-align: top;
         text-align: center;
+      }
+
+      #parameters > div {
+        border: 1px black solid;
+        width: 100%;
+        margin-bottom: 1em;
       }
 
       #sort, #sort table {
@@ -49,45 +54,59 @@
       #parameters input {
         text-align: center;
       }
+
+      #parameters h3 {
+        text-align: center;
+        background-color: black;
+        color: white;
+        padding-top: 0px;
+        margin-top: 0px;
+      }
     </style>
   </head>
   <body>
     <div style="margin: auto;">
       <div id="parameters">
-        <p id="NumberOfColorsP">
-          <label>Number of colors
-            <br><input type="number" name="NumberOfColors" id="NumberOfColors" min="1", max="10" value="2"></label>
-            <br id="NumberOfColor1BR"><input type="number" name="NumberOfColor1" id="NumberOfColor1" value="200">
-            <br id="NumberOfColor2BR"><input type="number" name="NumberOfColor2" id="NumberOfColor2" value="200">
-        </p>
-        <p>
-          <label>Number of agents
-            <br><input type="number" name="NumberOfAgents" id="NumberOfAgents" min="1" max="200" value="20"></label>
-        </p>
-        <p>
-          <label>Memory size of ants (<em>t</em>)
-            <br><input type="number" name="MemorySize" id="MemorySize" min="1" max="200" value="10"></label>
-        </p>
-        <p>
-          <label>Number of step par frame (<em>i</em>)
-            <br><input type="number" name="NumberOfSteps" id="NumberOfSteps" min="1" max="200" value="1"></label>
-        </p>
-        <p>
-          <label>Pick rate over 1 (<em>kp</em>)
-            <br><input type="number" name="kprate" id="kprate" min="0" max="1" step="0.01" value="0.1"></label>
-        </p>
-        <p>
-          <label>Place rate over 1 (<em>kd</em>)
-            <br><input type="number" name="kdrate" id="kdrate" min="0" max="1" step="0.01" value="0.3"></label>
-        </p>
-        <p>
-          <label>Grid size
-            <br><input type="number" name="gridsizeX" id="gridsizeX" min="1" max="1000" value="50">
-            <input type="number" name="gridsizeY" id="gridsizeY" min="1" max="1000" value="50"> </label>
-        </p>
-        <p>
-          <input type="submit" value="Start" id="startgrid">
-        </p>
+        <div>
+          <h3>Grid parameters</h3>
+          <p id="NumberOfColorsP">
+            <label>Number of colors
+              <br><input type="number" name="NumberOfColors" id="NumberOfColors" min="1", max="12" value="2"></label>
+              <br id="NumberOfColor1BR"><input type="number" name="NumberOfColor1" id="NumberOfColor1" value="200" max="10000">
+              <br id="NumberOfColor2BR"><input type="number" name="NumberOfColor2" id="NumberOfColor2" value="200" max="10000">
+          </p>
+          <p>
+            <label>Number of agents
+              <br><input type="number" name="NumberOfAgents" id="NumberOfAgents" min="1" max="200" value="20"></label>
+          </p>
+          <p>
+            <label>Memory size of ants (<em>t</em>)
+              <br><input type="number" name="MemorySize" id="MemorySize" min="1" max="200" value="10"></label>
+          </p>
+          <p>
+            <label>Number of step per iteration (<em>i</em>)
+              <br><input type="number" name="NumberOfSteps" id="NumberOfSteps" min="1" max="200" value="1"></label>
+          </p>
+          <p>
+            <label>Grid size
+              <br><input type="number" name="gridsizeX" id="gridsizeX" min="1" max="1000" value="50">
+              <input type="number" name="gridsizeY" id="gridsizeY" min="1" max="1000" value="50"> </label>
+          </p>
+          <p>
+            <input type="submit" value="Start" id="startgrid">
+          </p>
+        </div>
+        <div>
+          <h3>Live Behaviour</h3>
+          <p>
+            <label>Pick rate over 1 (<em>kp</em>)
+              <br><input type="number" name="kprate" id="kprate" min="0" max="1" step="0.05" value="0.1"></label>
+          </p>
+          <p>
+            <label>Place rate over 1 (<em>kd</em>)
+              <br><input type="number" name="kdrate" id="kdrate" min="0" max="1" step="0.05" value="0.3"></label>
+          </p>
+        </div>
       </div>
 
       <div id="sort">
@@ -97,11 +116,24 @@
   </body>
   <script src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
   <script>
-    let listOfColors = ["#1f77b4","#ff7f0e","#2ca02c","#d62728","#9467bd","#8c564b","#e377c2","#7f7f7f","#bcbd22","#17becf"];
+    let listOfColors = ["#a6cee3","#1f78b4","#fb9a99","#e31a1c","#b2df8a","#33a02c","#fdbf6f","#ff7f00","#cab2d6","#6a3d9a","#ffff99","#b15928"];
 
     let currentParameters = {
-      numberOfColors: 2
+      numberOfColors: 2,
+      step_size: 1
     };
+
+    let attachChangement = function(fieldName, jsonIdentifier) {
+      let getFloat = function() { return parseFloat($(jsonIdentifier).val()); };
+      currentParameters[fieldName] = getFloat();
+
+      $(jsonIdentifier).on('keyup change click', function () {
+        currentParameters[fieldName] = getFloat();
+      });
+    }
+
+    attachChangement("kp", "#kprate")
+    attachChangement("kd", "#kdrate")
 
     let isDrawing = false;
 
@@ -110,7 +142,7 @@
         let numberOfColors = parseInt($("#NumberOfColors").val());
         console.log(numberOfColors);
 
-        if (numberOfColors <= 0 || numberOfColors >= 10) {
+        if (numberOfColors <= 0 || numberOfColors >= 12) {
           return;
         }
 
@@ -118,7 +150,7 @@
           for (let i = currentParameters.numberOfColors + 1 ; i <= numberOfColors ; ++i) {
             let id = "NumberOfColor" + i;
             $("#NumberOfColorsP").append(
-              '<br id="'+id+'BR"><input type="number" name="'+id+'" id="'+id+'" value="0">'
+              '<br id="'+id+'BR"><input type="number" name="'+id+'" id="'+id+'" value="0" max="10000">'
             );
           }
         } else if (currentParameters.numberOfColors > numberOfColors) {
@@ -147,6 +179,7 @@
       let newGrid = new Grid(gridSizeX, gridSizeY);
       let numberOfAgents = getInt("#NumberOfAgents");
       let numberOfColors = getInt("#NumberOfColors");
+      let memorySize = getInt("#MemorySize");
       let numberOfEachColor = [];
       let totalDots = 0;
       for (let i = 0 ; i != numberOfColors ; ++i) {
@@ -157,9 +190,17 @@
       if (numberOfColors + totalDots > gridSizeX * gridSizeY) {
         return;
       }
+
+      currentParameters.step_size = getInt("#NumberOfSteps");
       
       for (let i = 0 ; i != numberOfColors ; ++i) {
-        let color = listOfColors[i];
+        let color;
+        if (i <= 6) {
+          color = listOfColors[i * 2 + 1]
+        } else {
+          color = listOfColors[(i - 6) * 2];
+        }
+
         let size = numberOfEachColor[i];
 
         for (let i = 0 ; i != size ; i++) {
@@ -170,8 +211,8 @@
         }
       }
 
-      for (let i = 0 ; i != number_of_agents ; i++) {
-        newGrid.put_an_ant();
+      for (let i = 0 ; i != numberOfAgents ; i++) {
+        newGrid.put_an_ant({ mem_size: memorySize });
       }
 
       while (isDrawing) {
@@ -191,21 +232,6 @@
      * CONSTANTS *
      *************/
 
-    // Ants parameters
-    const constant_t = 10; // Memory size of ants
-    const constant_pas = 1; // Maximum size of ant move
-    const kp = 0.1;
-    const kd = 0.3;
-
-    // Grid parameters
-    const constant_grid_size = 50;
-    const initial_elements = [
-      { color: 'red' , size: 208 },
-      { color: 'blue', size: 200 },
-      { color: 'green', size: 0 }
-    ];
-
-    const number_of_agents = 20;
 
     const NUMBER_OF_STEPS_PER_DISPLAY = 500;
 
@@ -252,17 +278,18 @@
     }
 
     let Ant = class {
-      constructor(grid, x, y) {
+      constructor(grid, x, y, params) {
         this.x = x;
         this.y = y;
         this.grid = grid;
         this.heldItem = null;
         this.type = 'ant';
         this.memory = [];
+        this.memory_size = params.mem_size;
       }
 
       see_item(item) {
-        while (this.memory.length + 1 >= constant_t) {
+        while (this.memory.length + 1 >= this.memory_size) {
           this.memory.shift();
         }
 
@@ -283,6 +310,7 @@
       }
     };
 
+    /*
     let Ant_Vision = class {
       constructor(grid, x, y) {
         this.x = x;
@@ -332,7 +360,8 @@
         return c * 1.0 / number_of_elements * 1.0;
       }
     };
-    
+    */
+
     let Grid = class {
       constructor(rowNumber, columnNumber) {
         this.rowNumber = rowNumber;
@@ -363,6 +392,10 @@
             cell.className = "";
           }
         }
+      }
+
+      number_of_agents() {
+        return this.ants.length;
       }
 
       cell_position(i, j) {
@@ -414,13 +447,13 @@
         this.table[available_position[2]] = element_id;
       }
 
-      put_an_ant() {
+      put_an_ant(params) {
         let available_position = this.find_an_available_position();
         
         let x = available_position[0];
         let y = available_position[1];
 
-        let ant = new Ant(this, x, y);
+        let ant = new Ant(this, x, y, params);
 
         this.table[available_position[2]] = ant;
         this.ants.push(ant);
@@ -485,7 +518,7 @@
         let ant = this.ants[Math.floor(Math.random() * this.ants.length)]
 
         ant.last_direction = direction;
-        for (let i = 0 ; i != constant_pas ; i++)
+        for (let i = 0 ; i != currentParameters.step_size ; i++)
           this.move_agent(ant.x, ant.y, direction);
         
         let cell_in_front = this.compute_grid_destination(ant.x, ant.y, direction);
@@ -497,7 +530,7 @@
 
         if (front_content != null && front_content.type == 'resource' && ant.heldItem == null) {
           let f = ant.count_item_occurences(front_content.color);
-          let pTake = Math.pow(kp / (kp + f), 2);
+          let pTake = Math.pow(currentParameters.kp / (currentParameters.kp + f), 2);
 
           if (Math.random() < pTake) {
             ant.heldItem = this.table[cell_in_front[2]];
@@ -505,7 +538,7 @@
           }
         } else if (ant.heldItem != null) {
           let f = ant.count_item_occurences(ant.heldItem.color);
-          let pPut = Math.pow(f / (kd + f), 2);
+          let pPut = Math.pow(f / (currentParameters.kd + f), 2);
 
           if (Math.random() < pPut) {
             shuffle(Directions);
@@ -583,31 +616,12 @@
      * GRID CONSTRUCT *
      ******************/
 
-    let grid = new Grid(constant_grid_size, constant_grid_size);
-
-    initial_elements.forEach(function (element) {
-      let color = element.color;
-      let size = element.size;
-
-      for (let i = 0 ; i != size ; i++) {
-        grid.put_element({
-          type: 'resource',
-          color: color
-        });
-      }
-    });
-
-    for (let i = 0 ; i != number_of_agents ; i++) {
-      grid.put_an_ant();
-    }
-
-    grid.buildDomTable();
-    grid.update_table();
+    replace_grid();
 
     let update_grid = function() {
       if (grid != null) {
         let mygrid = grid;
-        for (let s = 0 ; s != NUMBER_OF_STEPS_PER_DISPLAY * number_of_agents ; s++) {
+        for (let s = 0 ; s != NUMBER_OF_STEPS_PER_DISPLAY * mygrid.number_of_agents() ; s++) {
           mygrid.move_an_ant();
         }
 
