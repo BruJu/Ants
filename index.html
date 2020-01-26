@@ -31,6 +31,7 @@
       }
 
       #parameters {
+        border: 1px black solid;
         width: 200px;
         display: inline-block;
         vertical-align: top;
@@ -55,7 +56,7 @@
       <div id="parameters">
         <p id="NumberOfColorsP">
           <label>Number of colors
-            <br><input type="number" name="NumberOfColors" id="NumberOfColors" min="1", max="20" value="2"></label>
+            <br><input type="number" name="NumberOfColors" id="NumberOfColors" min="1", max="10" value="2"></label>
             <br id="NumberOfColor1BR"><input type="number" name="NumberOfColor1" id="NumberOfColor1" value="200">
             <br id="NumberOfColor2BR"><input type="number" name="NumberOfColor2" id="NumberOfColor2" value="200">
         </p>
@@ -94,21 +95,22 @@
       </div>
   </div>
   </body>
-  <script
-			  src="https://code.jquery.com/jquery-3.4.1.min.js"
-			  integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
-			  crossorigin="anonymous"></script>
+  <script src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
   <script>
+    let listOfColors = ["#1f77b4","#ff7f0e","#2ca02c","#d62728","#9467bd","#8c564b","#e377c2","#7f7f7f","#bcbd22","#17becf"];
+
     let currentParameters = {
       numberOfColors: 2
     };
+
+    let isDrawing = false;
 
     $("#NumberOfColors").on('keyup change click', function () {
       if(this.value !== currentParameters.numberOfColors) {
         let numberOfColors = parseInt($("#NumberOfColors").val());
         console.log(numberOfColors);
 
-        if (numberOfColors <= 0 || numberOfColors >= 20) {
+        if (numberOfColors <= 0 || numberOfColors >= 10) {
           return;
         }
 
@@ -126,11 +128,64 @@
           }
         }
 
-        console.log(currentParameters);
-
         currentParameters.numberOfColors = numberOfColors;
       }
     });
+
+    let replace_grid = function() {
+      // The main problem of this method is that Javascript doesn't offer mutex and other syncrhonization tools. So we
+      // have to rely on unsafe behaviours while limiting the chances a synchronization problem occurs.
+
+      grid = null; // We use the Read-Copy-Update pattern
+
+      let getInt = function(jsonIdentifier) { return parseInt($(jsonIdentifier).val()); };
+
+      // We compute the new grid
+      let gridSizeX = getInt("#gridsizeX");
+      let gridSizeY = getInt("#gridsizeY");
+
+      let newGrid = new Grid(gridSizeX, gridSizeY);
+      let numberOfAgents = getInt("#NumberOfAgents");
+      let numberOfColors = getInt("#NumberOfColors");
+      let numberOfEachColor = [];
+      let totalDots = 0;
+      for (let i = 0 ; i != numberOfColors ; ++i) {
+        numberOfEachColor.push(getInt("#NumberOfColor" + (i + 1)));
+        totalDots += numberOfEachColor[i];
+      }
+
+      if (numberOfColors + totalDots > gridSizeX * gridSizeY) {
+        return;
+      }
+      
+      for (let i = 0 ; i != numberOfColors ; ++i) {
+        let color = listOfColors[i];
+        let size = numberOfEachColor[i];
+
+        for (let i = 0 ; i != size ; i++) {
+          newGrid.put_element({
+            type: 'resource',
+            color: color
+          });
+        }
+      }
+
+      for (let i = 0 ; i != number_of_agents ; i++) {
+        newGrid.put_an_ant();
+      }
+
+      while (isDrawing) {
+        // Active wait to not delete the content of the table if it is still currently drawing
+      }
+
+      isDrawing = true;
+      newGrid.buildDomTable();
+      isDrawing = false;
+
+      grid = newGrid;
+    };
+
+    $("#startgrid").click(replace_grid);
 
     /*************
      * CONSTANTS *
@@ -293,15 +348,16 @@
 
         // Ant list
         this.ants = [];
+      }
 
-        // Build dom table
+      buildDomTable() {
         let table = document.getElementById("SMA");
         table.innerHTML = "";
         
-        for (let i = 0 ; i != rowNumber ; i++) {
+        for (let i = 0 ; i != this.rowNumber ; i++) {
           let row = table.insertRow(i);
           
-          for (let j = 0 ; j != columnNumber ; j++) {
+          for (let j = 0 ; j != this.columnNumber ; j++) {
             let cell = row.insertCell(j);
             cell.id = "cell_" + i + "_" + j;
             cell.className = "";
@@ -317,25 +373,23 @@
         for (let i = 0 ; i != this.rowNumber ; i++) {
           for (let j = 0 ; j != this.columnNumber ; j++) {
             let cell_name = "cell_" + i + "_" + j;
-            let cell = document.getElementById(cell_name);
+            let cell = $("#" + cell_name);
+
             let require_class = "";
 
             let cell_content = this.table[this.cell_position(i, j)];
             if (cell_content === null) {
-              require_class = "";
+              cell.className = "";
+              cell.css("background-color", "");
             } else {
               if (cell_content.type == 'resource') {
-                require_class = cell_content.color;
+                cell.className = "";
+                cell.css("background-color", cell_content.color);
               } else if (cell_content.type == 'ant') {
-                require_class = 'ant';
-
-                if (cell_content.heldItem != null) {
-                  require_class = require_class + "_" + cell_content.heldItem.color;
-                }
+                cell.css("background-color", "");
+                cell.className = "ant";
               }
             }
-
-            cell.className = require_class;
           }
         }
       }
@@ -366,7 +420,7 @@
         let x = available_position[0];
         let y = available_position[1];
 
-        let ant = new Ant_Vision(this, x, y);
+        let ant = new Ant(this, x, y);
 
         this.table[available_position[2]] = ant;
         this.ants.push(ant);
@@ -547,17 +601,24 @@
       grid.put_an_ant();
     }
 
+    grid.buildDomTable();
     grid.update_table();
 
     let update_grid = function() {
       if (grid != null) {
+        let mygrid = grid;
         for (let s = 0 ; s != NUMBER_OF_STEPS_PER_DISPLAY * number_of_agents ; s++) {
-          grid.move_an_ant();
+          mygrid.move_an_ant();
         }
-        grid.update_table();
 
-        window.requestAnimationFrame(update_grid);
+        isDrawing = true;
+        if (grid == mygrid) {
+          mygrid.update_table();
+        }
+        isDrawing = false;
       }
+
+      window.requestAnimationFrame(update_grid);
     }
 
     window.requestAnimationFrame(update_grid);
