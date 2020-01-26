@@ -29,13 +29,109 @@
         width: 10px;
         height: 10px;
       }
+
+      #parameters {
+        width: 200px;
+        display: inline-block;
+        vertical-align: top;
+        text-align: center;
+      }
+
+      #sort, #sort table {
+        display: inline-block;
+      }
+
+      #parameters label {
+        font-weight: bold;
+      }
+
+      #parameters input {
+        text-align: center;
+      }
     </style>
   </head>
   <body>
-    <table id="SMA">
-    </table>
+    <div style="margin: auto;">
+      <div id="parameters">
+        <p id="NumberOfColorsP">
+          <label>Number of colors
+            <br><input type="number" name="NumberOfColors" id="NumberOfColors" min="1", max="20" value="2"></label>
+            <br id="NumberOfColor1BR"><input type="number" name="NumberOfColor1" id="NumberOfColor1" value="200">
+            <br id="NumberOfColor2BR"><input type="number" name="NumberOfColor2" id="NumberOfColor2" value="200">
+        </p>
+        <p>
+          <label>Number of agents
+            <br><input type="number" name="NumberOfAgents" id="NumberOfAgents" min="1" max="200" value="20"></label>
+        </p>
+        <p>
+          <label>Memory size of ants (<em>t</em>)
+            <br><input type="number" name="MemorySize" id="MemorySize" min="1" max="200" value="10"></label>
+        </p>
+        <p>
+          <label>Number of step par frame (<em>i</em>)
+            <br><input type="number" name="NumberOfSteps" id="NumberOfSteps" min="1" max="200" value="1"></label>
+        </p>
+        <p>
+          <label>Pick rate over 1 (<em>kp</em>)
+            <br><input type="number" name="kprate" id="kprate" min="0" max="1" step="0.01" value="0.1"></label>
+        </p>
+        <p>
+          <label>Place rate over 1 (<em>kd</em>)
+            <br><input type="number" name="kdrate" id="kdrate" min="0" max="1" step="0.01" value="0.3"></label>
+        </p>
+        <p>
+          <label>Grid size
+            <br><input type="number" name="gridsizeX" id="gridsizeX" min="1" max="1000" value="50">
+            <input type="number" name="gridsizeY" id="gridsizeY" min="1" max="1000" value="50"> </label>
+        </p>
+        <p>
+          <input type="submit" value="Start" id="startgrid">
+        </p>
+      </div>
+
+      <div id="sort">
+        <table id="SMA"></table>
+      </div>
+  </div>
   </body>
+  <script
+			  src="https://code.jquery.com/jquery-3.4.1.min.js"
+			  integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
+			  crossorigin="anonymous"></script>
   <script>
+    let currentParameters = {
+      numberOfColors: 2
+    };
+
+    $("#NumberOfColors").on('keyup change click', function () {
+      if(this.value !== currentParameters.numberOfColors) {
+        let numberOfColors = parseInt($("#NumberOfColors").val());
+        console.log(numberOfColors);
+
+        if (numberOfColors <= 0 || numberOfColors >= 20) {
+          return;
+        }
+
+        if (currentParameters.numberOfColors < numberOfColors) {
+          for (let i = currentParameters.numberOfColors + 1 ; i <= numberOfColors ; ++i) {
+            let id = "NumberOfColor" + i;
+            $("#NumberOfColorsP").append(
+              '<br id="'+id+'BR"><input type="number" name="'+id+'" id="'+id+'" value="0">'
+            );
+          }
+        } else if (currentParameters.numberOfColors > numberOfColors) {
+          for (let i = currentParameters.numberOfColors ; i > numberOfColors ; --i) {
+            $("#NumberOfColor" + i).remove();
+            $("#NumberOfColor" + i + "BR").remove();
+          }
+        }
+
+        console.log(currentParameters);
+
+        currentParameters.numberOfColors = numberOfColors;
+      }
+    });
+
     /*************
      * CONSTANTS *
      *************/
