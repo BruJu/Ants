@@ -73,14 +73,6 @@
             <br><input type="number" name="NumberOfAgents" id="NumberOfAgents" min="1" max="200" value="20"></label>
         </p>
         <p>
-          <label>Memory size of ants (<em>t</em>)
-            <br><input type="number" name="MemorySize" id="MemorySize" min="1" max="200" value="10"></label>
-        </p>
-        <p>
-          <label>Number of step per iteration (<em>i</em>)
-            <br><input type="number" name="NumberOfSteps" id="NumberOfSteps" min="1" max="200" value="1"></label>
-        </p>
-        <p>
           <label>Grid size
             <br><input type="number" name="gridsizeX" id="gridsizeX" min="1" max="1000" value="50">
             <input type="number" name="gridsizeY" id="gridsizeY" min="1" max="1000" value="50"> </label>
@@ -91,6 +83,14 @@
       </div>
       <div>
         <h3>Live Behaviour</h3>
+        <p>
+          <label>Memory size of ants (<em>t</em>)
+            <br><input type="number" name="MemorySize" id="MemorySize" min="1" max="200" value="10"></label>
+        </p>
+        <p>
+          <label>Number of step per iteration (<em>i</em>)
+            <br><input type="number" name="NumberOfSteps" id="NumberOfSteps" min="1" max="200" value="1"></label>
+        </p>
         <p>
           <label>Pick rate over 1 (<em>kp</em>)
             <br><input type="number" name="kprate" id="kprate" min="0" max="1" step="0.05" value="0.1"></label>
@@ -113,8 +113,7 @@
   let listOfColors = ["#a6cee3", "#1f78b4", "#fb9a99", "#e31a1c", "#b2df8a", "#33a02c", "#fdbf6f", "#ff7f00", "#cab2d6", "#6a3d9a", "#ffff99", "#b15928"];
 
   let currentParameters = {
-    numberOfColors: 2,
-    step_size: 1
+    numberOfColors: 2
   };
 
   let attachChangement = function (fieldName, jsonIdentifier) {
@@ -128,13 +127,14 @@
 
   attachChangement("kp", "#kprate")
   attachChangement("kd", "#kdrate")
+  attachChangement("t", "#MemorySize")
+  attachChangement("i", "#NumberOfSteps")
 
   let isDrawing = false;
 
   $("#NumberOfColors").on('keyup change click', function () {
     if (this.value !== currentParameters.numberOfColors) {
       let numberOfColors = parseInt($("#NumberOfColors").val());
-      console.log(numberOfColors);
 
       if (numberOfColors <= 0 || numberOfColors >= 12) {
         return;
@@ -185,8 +185,6 @@
       return;
     }
 
-    currentParameters.step_size = getInt("#NumberOfSteps");
-
     for (let i = 0; i != numberOfColors; ++i) {
       let color;
       if (i <= 6) {
@@ -206,7 +204,7 @@
     }
 
     for (let i = 0; i != numberOfAgents; i++) {
-      newGrid.put_an_ant({ mem_size: memorySize });
+      newGrid.put_an_ant();
     }
 
     while (isDrawing) {
@@ -279,11 +277,10 @@
       this.heldItem = null;
       this.type = 'ant';
       this.memory = [];
-      this.memory_size = params.mem_size;
     }
 
     see_item(item) {
-      while (this.memory.length + 1 >= this.memory_size) {
+      while (this.memory.length + 1 >= currentParameters.t) {
         this.memory.shift();
       }
 
@@ -508,7 +505,7 @@
       let ant = this.ants[Math.floor(Math.random() * this.ants.length)]
 
       ant.last_direction = direction;
-      for (let i = 0; i != currentParameters.step_size; i++)
+      for (let i = 0; i != currentParameters.i; i++)
         this.move_agent(ant.x, ant.y, direction);
 
       let cell_in_front = this.compute_grid_destination(ant.x, ant.y, direction);
