@@ -280,7 +280,7 @@
     }
 
     see_item(item) {
-      while (this.memory.length + 1 >= currentParameters.t) {
+      while (this.memory.length - 1 >= currentParameters.t) {
         this.memory.shift();
       }
 
