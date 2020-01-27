@@ -88,8 +88,19 @@
             <br><input type="number" name="MemorySize" id="MemorySize" min="1" max="200" value="10"></label>
         </p>
         <p>
+          <label>Méthode de déplacement
+            <br><select name="MoveMethod" id="MoveMethod">
+              <option selected value="stable">Déplacement constant</option>
+              <option value="levy">Vol de Lévy</option>
+            </select>
+        </p>
+        <p id="stepmethod_iteration">
           <label>Number of step per iteration (<em>i</em>)
             <br><input type="number" name="NumberOfSteps" id="NumberOfSteps" min="1" max="200" value="1"></label>
+        </p>
+        <p id="stepmethod_levy" style="display: none;">
+          <label>Taux du vol de lévy
+            <br><input type="number" name="levyFlightRate" id="levyFlightRate" min="0" max="100" value="0.9", step="0.001"></label>
         </p>
         <p>
           <label>Pick rate over 1 (<em>kp</em>)
@@ -111,8 +122,7 @@
     </div>
   </div>
 </body>
-<script src="https://code.jquery.com/jquery-3.4.1.min.js"
-  integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-3.4.1.min.js" crossorigin="anonymous"></script>
 <script>
   let listOfColors = ["#a6cee3", "#1f78b4", "#fb9a99", "#e31a1c", "#b2df8a", "#33a02c", "#fdbf6f", "#ff7f00", "#cab2d6", "#6a3d9a", "#ffff99", "#b15928"];
 
@@ -129,11 +139,37 @@
     });
   }
 
-  attachChangement("kp", "#kprate")
-  attachChangement("kd", "#kdrate")
-  attachChangement("t", "#MemorySize")
-  attachChangement("i", "#NumberOfSteps")
-  attachChangement("errorrate", "#errorrate")
+  attachChangement("kp", "#kprate");
+  attachChangement("kd", "#kdrate");
+  attachChangement("t", "#MemorySize");
+  attachChangement("i", "#NumberOfSteps");
+  attachChangement("errorrate", "#errorrate");
+  attachChangement("levyFlightRate", "#levyFlightRate");
+
+
+  $("#MoveMethod").on('change', function () {
+    let listOfBlocks = {
+      '#stepmethod_iteration': 'stable',
+      '#stepmethod_levy': 'levy'
+    };
+
+    let thisVal = $("#MoveMethod").val();
+
+    for (let block in listOfBlocks) {
+      let div = block;
+      let divValue = listOfBlocks[block];
+
+      if (divValue == thisVal) {
+        $(div).css("display", "inline-block");
+      } else {
+        $(div).css("display", "none");
+      }
+    }
+
+  });
+
+  $("#MoveMethod").trigger("change");
+
 
   let isDrawing = false;
 
@@ -256,6 +292,11 @@
     }
 
     return array;
+  }
+
+  function getLevyFlightDistance() {
+    // Formula and algorithm found here : https://github.com/doms3/levy-flight
+    return Math.max(1, Math.floor(pow(1 - Math.random(), -1 / currentParameters.levyFlightRate)));
   }
 
 
