@@ -84,14 +84,21 @@
       <div>
         <h3>Live Behaviour</h3>
         <p>
+          <label>Inspection method
+            <br><select name="InspectionMethod" id="InspectionMethod">
+              <option selected value="memory">Memory</option>
+              <option value="vision">Vision Around</option>
+            </select>
+        </p>
+        <p id="inspectionmethod_buffer">
           <label>Memory size of ants (<em>t</em>)
             <br><input type="number" name="MemorySize" id="MemorySize" min="1" max="200" value="10"></label>
         </p>
         <p>
-          <label>Méthode de déplacement
+          <label>Move method
             <br><select name="MoveMethod" id="MoveMethod">
-              <option selected value="stable">Déplacement constant</option>
-              <option value="levy">Vol de Lévy</option>
+              <option selected value="stable">Constant distance move</option>
+              <option value="levy">Levy Flight</option>
             </select>
         </p>
         <p id="stepmethod_iteration">
@@ -99,7 +106,7 @@
             <br><input type="number" name="NumberOfSteps" id="NumberOfSteps" min="1" max="200" value="1"></label>
         </p>
         <p id="stepmethod_levy" style="display: none;">
-          <label>Taux du vol de lévy
+          <label>Levy Flight Rate
             <br><input type="number" name="levyFlightRate" id="levyFlightRate" min="0" max="100" value="0.9", step="0.001"></label>
         </p>
         <p>
@@ -135,7 +142,8 @@
 
   let currentParameters = {
     numberOfColors: 2,
-    distanceGetter: constantFlight
+    distanceGetter: constantFlight,
+    method_buffer: true
   };
 
   let attachChangement = function (fieldName, jsonIdentifier) {
@@ -168,15 +176,29 @@
       let divValue = listOfBlocks[block][0];
 
       if (divValue == thisVal) {
-        $(div).css("display", "inline-block");
+        $(div).css("display", "block");
         currentParameters.distanceGetter = listOfBlocks[block][1];
       } else {
         $(div).css("display", "none");
       }
     }
-
   });
 
+  $("#InspectionMethod").on('change', function() {
+    let thisVal = $("#InspectionMethod").val();
+    let div = "#inspectionmethod_buffer";
+
+    if (thisVal == "memory") {
+        $(div).css("display", "block");
+        currentParameters.method_buffer = true;
+    } else {
+        $(div).css("display", "none");
+        currentParameters.method_buffer = false;
+    }
+  });
+
+
+  $("#InspectionMethod").trigger("change");
   $("#MoveMethod").trigger("change");
 
 
@@ -634,7 +656,20 @@
         }
       }
 
-      ant.see_item(front_content);
+      if (currentParameters.method_buffer) {
+        ant.see_item(front_content);
+      } else {
+        let t = this.see_around(ant.x, ant.y, "AROUND", undefined);
+        ant.memory = [];
+        t.forEach((e) => {
+          if (e == null || e.type != 'resource') {
+            ant.memory.push(null);
+          } else {
+            ant.memory.push(e.color);
+          }
+        });
+
+      }
     }
 
     see_around(x, y, method, step) {
