@@ -1,641 +1,632 @@
 <!doctype HTML>
 <html>
-  <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <title>S M A</title>
 
-    <style>
-      .red {      background-color: red;   }
-      .blue {     background-color: blue;  }
-      .green {    background-color: green; }
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <title>S M A</title>
 
-      .ant {
-        background-color: lightgrey;
-      }
-
-      .ant_red {
-        background-color: pink;
-      }
-      .ant_blue {
-        background-color: lightblue;
-      }
-
-      table, td, tr {
-        border-collapse: collapse;
-        border: 1px black solid;
-      }
-
-      td {
-        width: 10px;
-        height: 10px;
-      }
-
-      #parameters {
-        width: 250px;
-        display: inline-block;
-        vertical-align: top;
-        text-align: center;
-      }
-
-      #parameters > div {
-        border: 1px black solid;
-        width: 100%;
-        margin-bottom: 1em;
-      }
-
-      #sort, #sort table {
-        display: inline-block;
-      }
-
-      #parameters label {
-        font-weight: bold;
-      }
-
-      #parameters input {
-        text-align: center;
-      }
-
-      #parameters h3 {
-        text-align: center;
-        background-color: black;
-        color: white;
-        padding-top: 0px;
-        margin-top: 0px;
-      }
-    </style>
-  </head>
-  <body>
-    <div style="margin: auto;">
-      <div id="parameters">
-        <div>
-          <h3>Grid parameters</h3>
-          <p id="NumberOfColorsP">
-            <label>Number of colors
-              <br><input type="number" name="NumberOfColors" id="NumberOfColors" min="1", max="12" value="2"></label>
-              <br id="NumberOfColor1BR"><input type="number" name="NumberOfColor1" id="NumberOfColor1" value="200" max="10000">
-              <br id="NumberOfColor2BR"><input type="number" name="NumberOfColor2" id="NumberOfColor2" value="200" max="10000">
-          </p>
-          <p>
-            <label>Number of agents
-              <br><input type="number" name="NumberOfAgents" id="NumberOfAgents" min="1" max="200" value="20"></label>
-          </p>
-          <p>
-            <label>Memory size of ants (<em>t</em>)
-              <br><input type="number" name="MemorySize" id="MemorySize" min="1" max="200" value="10"></label>
-          </p>
-          <p>
-            <label>Number of step per iteration (<em>i</em>)
-              <br><input type="number" name="NumberOfSteps" id="NumberOfSteps" min="1" max="200" value="1"></label>
-          </p>
-          <p>
-            <label>Grid size
-              <br><input type="number" name="gridsizeX" id="gridsizeX" min="1" max="1000" value="50">
-              <input type="number" name="gridsizeY" id="gridsizeY" min="1" max="1000" value="50"> </label>
-          </p>
-          <p>
-            <input type="submit" value="Start" id="startgrid">
-          </p>
-        </div>
-        <div>
-          <h3>Live Behaviour</h3>
-          <p>
-            <label>Pick rate over 1 (<em>kp</em>)
-              <br><input type="number" name="kprate" id="kprate" min="0" max="1" step="0.05" value="0.1"></label>
-          </p>
-          <p>
-            <label>Place rate over 1 (<em>kd</em>)
-              <br><input type="number" name="kdrate" id="kdrate" min="0" max="1" step="0.05" value="0.3"></label>
-          </p>
-        </div>
-      </div>
-
-      <div id="sort">
-        <table id="SMA"></table>
-      </div>
-  </div>
-  </body>
-  <script src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
-  <script>
-    let listOfColors = ["#a6cee3","#1f78b4","#fb9a99","#e31a1c","#b2df8a","#33a02c","#fdbf6f","#ff7f00","#cab2d6","#6a3d9a","#ffff99","#b15928"];
-
-    let currentParameters = {
-      numberOfColors: 2,
-      step_size: 1
-    };
-
-    let attachChangement = function(fieldName, jsonIdentifier) {
-      let getFloat = function() { return parseFloat($(jsonIdentifier).val()); };
-      currentParameters[fieldName] = getFloat();
-
-      $(jsonIdentifier).on('keyup change click', function () {
-        currentParameters[fieldName] = getFloat();
-      });
+  <style>
+    .ant {
+      background-color: black;
     }
 
-    attachChangement("kp", "#kprate")
-    attachChangement("kd", "#kdrate")
+    table, td, tr {
+      border-collapse: collapse;
+      border: 1px black solid;
+    }
 
-    let isDrawing = false;
+    td {
+      width: 10px;
+      height: 10px;
+    }
 
-    $("#NumberOfColors").on('keyup change click', function () {
-      if(this.value !== currentParameters.numberOfColors) {
-        let numberOfColors = parseInt($("#NumberOfColors").val());
-        console.log(numberOfColors);
+    #parameters {
+      width: 250px;
+      display: inline-block;
+      vertical-align: top;
+      text-align: center;
+    }
 
-        if (numberOfColors <= 0 || numberOfColors >= 12) {
-          return;
-        }
+    #parameters>div {
+      border: 1px black solid;
+      width: 100%;
+      margin-bottom: 1em;
+    }
 
-        if (currentParameters.numberOfColors < numberOfColors) {
-          for (let i = currentParameters.numberOfColors + 1 ; i <= numberOfColors ; ++i) {
-            let id = "NumberOfColor" + i;
-            $("#NumberOfColorsP").append(
-              '<br id="'+id+'BR"><input type="number" name="'+id+'" id="'+id+'" value="0" max="10000">'
-            );
-          }
-        } else if (currentParameters.numberOfColors > numberOfColors) {
-          for (let i = currentParameters.numberOfColors ; i > numberOfColors ; --i) {
-            $("#NumberOfColor" + i).remove();
-            $("#NumberOfColor" + i + "BR").remove();
-          }
-        }
+    #sort, #sort table {
+      display: inline-block;
+    }
 
-        currentParameters.numberOfColors = numberOfColors;
-      }
+    #parameters label {
+      font-weight: bold;
+    }
+
+    #parameters input {
+      text-align: center;
+    }
+
+    #parameters h3 {
+      text-align: center;
+      background-color: black;
+      color: white;
+      padding-top: 0px;
+      margin-top: 0px;
+    }
+  </style>
+</head>
+
+<body>
+  <div style="margin: auto;">
+    <div id="parameters">
+      <div>
+        <h3>Grid parameters</h3>
+        <p id="NumberOfColorsP">
+          <label>Number of colors
+            <br><input type="number" name="NumberOfColors" id="NumberOfColors" min="1" , max="12" value="2"></label>
+          <br id="NumberOfColor1BR"><input type="number" name="NumberOfColor1" id="NumberOfColor1" value="200"
+            max="10000">
+          <br id="NumberOfColor2BR"><input type="number" name="NumberOfColor2" id="NumberOfColor2" value="200"
+            max="10000">
+        </p>
+        <p>
+          <label>Number of agents
+            <br><input type="number" name="NumberOfAgents" id="NumberOfAgents" min="1" max="200" value="20"></label>
+        </p>
+        <p>
+          <label>Memory size of ants (<em>t</em>)
+            <br><input type="number" name="MemorySize" id="MemorySize" min="1" max="200" value="10"></label>
+        </p>
+        <p>
+          <label>Number of step per iteration (<em>i</em>)
+            <br><input type="number" name="NumberOfSteps" id="NumberOfSteps" min="1" max="200" value="1"></label>
+        </p>
+        <p>
+          <label>Grid size
+            <br><input type="number" name="gridsizeX" id="gridsizeX" min="1" max="1000" value="50">
+            <input type="number" name="gridsizeY" id="gridsizeY" min="1" max="1000" value="50"> </label>
+        </p>
+        <p>
+          <input type="submit" value="Start" id="startgrid">
+        </p>
+      </div>
+      <div>
+        <h3>Live Behaviour</h3>
+        <p>
+          <label>Pick rate over 1 (<em>kp</em>)
+            <br><input type="number" name="kprate" id="kprate" min="0" max="1" step="0.05" value="0.1"></label>
+        </p>
+        <p>
+          <label>Place rate over 1 (<em>kd</em>)
+            <br><input type="number" name="kdrate" id="kdrate" min="0" max="1" step="0.05" value="0.3"></label>
+        </p>
+      </div>
+    </div>
+
+    <div id="sort">
+      <table id="SMA"></table>
+    </div>
+  </div>
+</body>
+<script src="https://code.jquery.com/jquery-3.4.1.min.js"
+  integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+<script>
+  let listOfColors = ["#a6cee3", "#1f78b4", "#fb9a99", "#e31a1c", "#b2df8a", "#33a02c", "#fdbf6f", "#ff7f00", "#cab2d6", "#6a3d9a", "#ffff99", "#b15928"];
+
+  let currentParameters = {
+    numberOfColors: 2,
+    step_size: 1
+  };
+
+  let attachChangement = function (fieldName, jsonIdentifier) {
+    let getFloat = function () { return parseFloat($(jsonIdentifier).val()); };
+    currentParameters[fieldName] = getFloat();
+
+    $(jsonIdentifier).on('keyup change click', function () {
+      currentParameters[fieldName] = getFloat();
     });
+  }
 
-    let replace_grid = function() {
-      // The main problem of this method is that Javascript doesn't offer mutex and other syncrhonization tools. So we
-      // have to rely on unsafe behaviours while limiting the chances a synchronization problem occurs.
+  attachChangement("kp", "#kprate")
+  attachChangement("kd", "#kdrate")
 
-      grid = null; // We use the Read-Copy-Update pattern
+  let isDrawing = false;
 
-      let getInt = function(jsonIdentifier) { return parseInt($(jsonIdentifier).val()); };
+  $("#NumberOfColors").on('keyup change click', function () {
+    if (this.value !== currentParameters.numberOfColors) {
+      let numberOfColors = parseInt($("#NumberOfColors").val());
+      console.log(numberOfColors);
 
-      // We compute the new grid
-      let gridSizeX = getInt("#gridsizeX");
-      let gridSizeY = getInt("#gridsizeY");
-
-      let newGrid = new Grid(gridSizeX, gridSizeY);
-      let numberOfAgents = getInt("#NumberOfAgents");
-      let numberOfColors = getInt("#NumberOfColors");
-      let memorySize = getInt("#MemorySize");
-      let numberOfEachColor = [];
-      let totalDots = 0;
-      for (let i = 0 ; i != numberOfColors ; ++i) {
-        numberOfEachColor.push(getInt("#NumberOfColor" + (i + 1)));
-        totalDots += numberOfEachColor[i];
-      }
-
-      if (numberOfColors + totalDots > gridSizeX * gridSizeY) {
+      if (numberOfColors <= 0 || numberOfColors >= 12) {
         return;
       }
 
-      currentParameters.step_size = getInt("#NumberOfSteps");
-      
-      for (let i = 0 ; i != numberOfColors ; ++i) {
-        let color;
-        if (i <= 6) {
-          color = listOfColors[i * 2 + 1]
-        } else {
-          color = listOfColors[(i - 6) * 2];
+      if (currentParameters.numberOfColors < numberOfColors) {
+        for (let i = currentParameters.numberOfColors + 1; i <= numberOfColors; ++i) {
+          let id = "NumberOfColor" + i;
+          $("#NumberOfColorsP").append(
+            '<br id="' + id + 'BR"><input type="number" name="' + id + '" id="' + id + '" value="0" max="10000">'
+          );
         }
-
-        let size = numberOfEachColor[i];
-
-        for (let i = 0 ; i != size ; i++) {
-          newGrid.put_element({
-            type: 'resource',
-            color: color
-          });
+      } else if (currentParameters.numberOfColors > numberOfColors) {
+        for (let i = currentParameters.numberOfColors; i > numberOfColors; --i) {
+          $("#NumberOfColor" + i).remove();
+          $("#NumberOfColor" + i + "BR").remove();
         }
       }
 
-      for (let i = 0 ; i != numberOfAgents ; i++) {
-        newGrid.put_an_ant({ mem_size: memorySize });
-      }
+      currentParameters.numberOfColors = numberOfColors;
+    }
+  });
 
-      while (isDrawing) {
-        // Active wait to not delete the content of the table if it is still currently drawing
-      }
+  let replace_grid = function () {
+    // The main problem of this method is that Javascript doesn't offer mutex and other syncrhonization tools. So we
+    // have to rely on unsafe behaviours while limiting the chances a synchronization problem occurs.
 
-      isDrawing = true;
-      newGrid.buildDomTable();
-      isDrawing = false;
+    grid = null; // We use the Read-Copy-Update pattern
 
-      grid = newGrid;
-    };
+    let getInt = function (jsonIdentifier) { return parseInt($(jsonIdentifier).val()); };
 
-    $("#startgrid").click(replace_grid);
+    // We compute the new grid
+    let gridSizeX = getInt("#gridsizeX");
+    let gridSizeY = getInt("#gridsizeY");
 
-    /*************
-     * CONSTANTS *
-     *************/
-
-
-    const NUMBER_OF_STEPS_PER_DISPLAY = 500;
-
-    const past_elements_nerf_constant = 0.7;
-
-    /*************
-     * UTILS     *
-     *************/
-
-    function shuffle(array) {
-      // Stolen here:  https://stackoverflow.com/questions/2450954/how-to-randomize-shuffle-a-javascript-array
-      var currentIndex = array.length, temporaryValue, randomIndex;
-
-      // While there remain elements to shuffle...
-      while (0 !== currentIndex) {
-
-        // Pick a remaining element...
-        randomIndex = Math.floor(Math.random() * currentIndex);
-        currentIndex -= 1;
-
-        // And swap it with the current element.
-        temporaryValue = array[currentIndex];
-        array[currentIndex] = array[randomIndex];
-        array[randomIndex] = temporaryValue;
-      }
-
-      return array;
+    let newGrid = new Grid(gridSizeX, gridSizeY);
+    let numberOfAgents = getInt("#NumberOfAgents");
+    let numberOfColors = getInt("#NumberOfColors");
+    let memorySize = getInt("#MemorySize");
+    let numberOfEachColor = [];
+    let totalDots = 0;
+    for (let i = 0; i != numberOfColors; ++i) {
+      numberOfEachColor.push(getInt("#NumberOfColor" + (i + 1)));
+      totalDots += numberOfEachColor[i];
     }
 
+    if (numberOfColors + totalDots > gridSizeX * gridSizeY) {
+      return;
+    }
 
-    /*************
-     * CLASS     *
-     *************/
+    currentParameters.step_size = getInt("#NumberOfSteps");
 
-    let Directions = ["Left", "Right", "Up", "Down"];
-    function opposite_direction(direction) {
-      switch (direction) {
-        case "Left": return "Right";
-        case "Right": return "Left";
-        case "Up": return "Down";
-        case "Down": return "Up";
-        default: return null;
+    for (let i = 0; i != numberOfColors; ++i) {
+      let color;
+      if (i <= 6) {
+        color = listOfColors[i * 2 + 1]
+      } else {
+        color = listOfColors[(i - 6) * 2];
+      }
+
+      let size = numberOfEachColor[i];
+
+      for (let i = 0; i != size; i++) {
+        newGrid.put_element({
+          type: 'resource',
+          color: color
+        });
       }
     }
 
-    let Ant = class {
-      constructor(grid, x, y, params) {
-        this.x = x;
-        this.y = y;
-        this.grid = grid;
-        this.heldItem = null;
-        this.type = 'ant';
-        this.memory = [];
-        this.memory_size = params.mem_size;
+    for (let i = 0; i != numberOfAgents; i++) {
+      newGrid.put_an_ant({ mem_size: memorySize });
+    }
+
+    while (isDrawing) {
+      // Active wait to not delete the content of the table if it is still currently drawing
+    }
+
+    isDrawing = true;
+    newGrid.buildDomTable();
+    isDrawing = false;
+
+    grid = newGrid;
+  };
+
+  $("#startgrid").click(replace_grid);
+
+  /*************
+   * CONSTANTS *
+   *************/
+
+
+  const NUMBER_OF_STEPS_PER_DISPLAY = 500;
+
+  const past_elements_nerf_constant = 0.7;
+
+  /*************
+   * UTILS     *
+   *************/
+
+  function shuffle(array) {
+    // Stolen here:  https://stackoverflow.com/questions/2450954/how-to-randomize-shuffle-a-javascript-array
+    var currentIndex = array.length, temporaryValue, randomIndex;
+
+    // While there remain elements to shuffle...
+    while (0 !== currentIndex) {
+
+      // Pick a remaining element...
+      randomIndex = Math.floor(Math.random() * currentIndex);
+      currentIndex -= 1;
+
+      // And swap it with the current element.
+      temporaryValue = array[currentIndex];
+      array[currentIndex] = array[randomIndex];
+      array[randomIndex] = temporaryValue;
+    }
+
+    return array;
+  }
+
+
+  /*************
+   * CLASS     *
+   *************/
+
+  let Directions = ["Left", "Right", "Up", "Down"];
+  function opposite_direction(direction) {
+    switch (direction) {
+      case "Left": return "Right";
+      case "Right": return "Left";
+      case "Up": return "Down";
+      case "Down": return "Up";
+      default: return null;
+    }
+  }
+
+  let Ant = class {
+    constructor(grid, x, y, params) {
+      this.x = x;
+      this.y = y;
+      this.grid = grid;
+      this.heldItem = null;
+      this.type = 'ant';
+      this.memory = [];
+      this.memory_size = params.mem_size;
+    }
+
+    see_item(item) {
+      while (this.memory.length + 1 >= this.memory_size) {
+        this.memory.shift();
       }
 
-      see_item(item) {
-        while (this.memory.length + 1 >= this.memory_size) {
-          this.memory.shift();
+      if (item != null && item.type == "resource")
+        this.memory.push(item.color);
+      else
+        this.memory.push("None");
+    }
+
+    count_item_occurences(item_kind) {
+      let c = 0;
+      this.memory.forEach(function (seen_kind) {
+        if (seen_kind == item_kind) {
+          c++;
         }
+      });
+      return c * 1.0 / this.memory.length * 1.0;
+    }
+  };
 
-        if (item != null && item.type == "resource")
-          this.memory.push(item.color);
-        else
-          this.memory.push("None");
+  /*
+  let Ant_Vision = class {
+    constructor(grid, x, y) {
+      this.x = x;
+      this.y = y;
+      this.last_direction = null;
+      this.grid = grid;
+      this.heldItem = null;
+      this.type = 'ant';
+      this.memory = [];
+      this.see_around_method = "AROUND";
+    }
+
+    see_item(item) {
+      while (this.memory.length + 1 >= constant_t) {
+        this.memory.shift();
       }
 
-      count_item_occurences(item_kind) {
-        let c = 0;
-        this.memory.forEach(function (seen_kind) {
+      let around_items = this.grid.see_around(this.x, this.y, this.see_around_method, constant_t);
+      let seens_items = [];
+      around_items.forEach(function (item) {
+        if (item != null) {
+          if (item.type == 'resource') {
+            seens_items.push(item.color);
+          } else {
+            seens_items.push(null);
+          }
+        }
+      })
+
+      this.memory.push(seens_items);
+    }
+
+    count_item_occurences(item_kind) {
+      let c = 0;
+      let number_of_elements = 0;
+      this.memory.forEach(function (seen_kinds) {
+        c = c * past_elements_nerf_constant;
+        number_of_elements = number_of_elements * past_elements_nerf_constant;
+        seen_kinds.forEach(function (seen_kind) {
           if (seen_kind == item_kind) {
             c++;
           }
+          number_of_elements++;
         });
-        return c * 1.0 / this.memory.length * 1.0;
-      }
-    };
+      });
 
-    /*
-    let Ant_Vision = class {
-      constructor(grid, x, y) {
-        this.x = x;
-        this.y = y;
-        this.last_direction = null;
-        this.grid = grid;
-        this.heldItem = null;
-        this.type = 'ant';
-        this.memory = [];
-        this.see_around_method = "AROUND";
-      }
+      return c * 1.0 / number_of_elements * 1.0;
+    }
+  };
+  */
 
-      see_item(item) {
-        while (this.memory.length + 1 >= constant_t) {
-          this.memory.shift();
+  let Grid = class {
+    constructor(rowNumber, columnNumber) {
+      this.rowNumber = rowNumber;
+      this.columnNumber = columnNumber;
+
+      // Build inner representation
+      this.table = [];
+      for (let i = 0; i != this.rowNumber; i++) {
+        for (let j = 0; j != this.columnNumber; j++) {
+          this.table.push(null);
         }
+      }
 
-        let around_items = this.grid.see_around(this.x, this.y, this.see_around_method, constant_t);
-        let seens_items = [];
-        around_items.forEach(function (item) {
-          if (item != null) {
-            if (item.type == 'resource') {
-              seens_items.push(item.color);
-            } else {
-              seens_items.push(null);
+      // Ant list
+      this.ants = [];
+    }
+
+    buildDomTable() {
+      let table = document.getElementById("SMA");
+      table.innerHTML = "";
+
+      for (let i = 0; i != this.rowNumber; i++) {
+        let row = table.insertRow(i);
+
+        for (let j = 0; j != this.columnNumber; j++) {
+          let cell = row.insertCell(j);
+          cell.id = "cell_" + i + "_" + j;
+          cell.className = "";
+        }
+      }
+    }
+
+    number_of_agents() {
+      return this.ants.length;
+    }
+
+    cell_position(i, j) {
+      return i * this.columnNumber + j;
+    }
+
+    update_table() {
+      for (let i = 0; i != this.rowNumber; i++) {
+        for (let j = 0; j != this.columnNumber; j++) {
+          let cell_name = "cell_" + i + "_" + j;
+          let cell = $("#" + cell_name);
+
+          let require_class = "";
+
+          let cell_content = this.table[this.cell_position(i, j)];
+          if (cell_content === null) {
+            cell.removeClass("ant");
+            cell.css("background-color", "");
+          } else if (cell_content.type == 'resource') {
+              cell.removeClass("ant");
+              cell.css("background-color", cell_content.color);
+          } else if (cell_content.type == 'ant') {
+              cell.css("background-color", "");
+              cell.addClass("ant");
+          }
+        }
+      }
+    }
+
+    find_an_available_position() {
+      while (true) {
+        let i = Math.floor(Math.random() * this.rowNumber);
+        let j = Math.floor(Math.random() * this.columnNumber);
+
+        let pos = this.cell_position(i, j);
+
+        if (this.table[pos] == null) {
+          return [i, j, pos];
+        }
+      }
+    }
+
+    put_element(element_id) {
+      let available_position = this.find_an_available_position();
+      this.table[available_position[2]] = element_id;
+    }
+
+    put_an_ant(params) {
+      let available_position = this.find_an_available_position();
+
+      let x = available_position[0];
+      let y = available_position[1];
+
+      let ant = new Ant(this, x, y, params);
+
+      this.table[available_position[2]] = ant;
+      this.ants.push(ant);
+    }
+
+    compute_grid_destination(x, y, direction) {
+      let xdest = x;
+      let ydest = y;
+
+      switch (direction) {
+        case "Left":
+          if (x == 0) return null;
+          xdest = x - 1;
+          break;
+        case "Right":
+          if (x == this.columnNumber - 1) return null;
+          xdest = x + 1;
+          break;
+        case "Up":
+          if (y == 0) return null;
+          ydest = y - 1;
+          break;
+        case "Down":
+        default:
+          if (y == this.rowNumber - 1) return null;
+          ydest = y + 1;
+          break;
+      }
+
+      let dest_pos = this.cell_position(xdest, ydest);
+      return [xdest, ydest, dest_pos];
+    }
+
+    move_agent(x, y, direction) {
+      let dest = this.compute_grid_destination(x, y, direction);
+
+      if (dest == null) {
+        return false;
+      }
+
+      let dest_x = dest[0];
+      let dest_y = dest[1];
+      let dest_pos = dest[2];
+
+      let init_pos = this.cell_position(x, y);
+
+      if (this.table[dest_pos] != null) {
+        return false;
+      }
+
+      this.table[dest_pos] = this.table[init_pos];
+      this.table[init_pos] = null;
+
+      this.table[dest_pos].x = dest_x;
+      this.table[dest_pos].y = dest_y;
+
+      return true;
+    }
+
+    move_an_ant() {
+      let direction = Directions[Math.floor(Math.random() * 4)];
+      let ant = this.ants[Math.floor(Math.random() * this.ants.length)]
+
+      ant.last_direction = direction;
+      for (let i = 0; i != currentParameters.step_size; i++)
+        this.move_agent(ant.x, ant.y, direction);
+
+      let cell_in_front = this.compute_grid_destination(ant.x, ant.y, direction);
+      if (cell_in_front == null) {
+        return;
+      }
+
+      let front_content = this.table[cell_in_front[2]];
+
+      if (front_content != null && front_content.type == 'resource' && ant.heldItem == null) {
+        let f = ant.count_item_occurences(front_content.color);
+        let pTake = Math.pow(currentParameters.kp / (currentParameters.kp + f), 2);
+
+        if (Math.random() < pTake) {
+          ant.heldItem = this.table[cell_in_front[2]];
+          this.table[cell_in_front[2]] = null;
+        }
+      } else if (ant.heldItem != null) {
+        let f = ant.count_item_occurences(ant.heldItem.color);
+        let pPut = Math.pow(f / (currentParameters.kd + f), 2);
+
+        if (Math.random() < pPut) {
+          shuffle(Directions);
+
+          let possible_directions = [];
+
+          for (let d = 0; d != 4; d++) {
+            let dir = Directions[d];
+
+            let cell_in_front = this.compute_grid_destination(ant.x, ant.y, dir);
+            if (cell_in_front == null) {
+              continue;
             }
+
+            if (this.table[cell_in_front[2]] != null)
+              continue;
+
+            possible_directions.push(cell_in_front[2]);
+          }
+
+          if (possible_directions.length >= 2) {
+            let position = possible_directions[Math.floor(Math.random() * possible_directions.length)];
+            this.table[position] = ant.heldItem;
+            ant.heldItem = null;
+          }
+        }
+      }
+
+      ant.see_item(front_content);
+    }
+
+    see_around(x, y, method, step) {
+      let seen_items = [];
+      let that = this;
+
+      if (method == "AROUND") {
+        Directions.forEach(function (direction) {
+          let dest_pos = that.compute_grid_destination(x, y, direction);
+          if (dest_pos != null) {
+            seen_items.push(that.table[dest_pos[2]]);
           }
         })
+      } else if (method == "FRONT_SIDE") {
+        let ant = this.table[this.cell_position(x, y)];
+        let opposite = opposite_direction(ant.last_direction);
 
-        this.memory.push(seens_items);
-      }
+        Directions.forEach(function (direction) {
+          if (direction == opposite) {
+            return;
+          }
 
-      count_item_occurences(item_kind) {
-        let c = 0;
-        let number_of_elements = 0;
-        this.memory.forEach(function (seen_kinds) {
-          c = c * past_elements_nerf_constant;
-          number_of_elements = number_of_elements * past_elements_nerf_constant;
-          seen_kinds.forEach(function (seen_kind) {
-            if (seen_kind == item_kind) {
-              c++;
+          let local_x = x;
+          let local_y = y;
+
+          for (let s = 0; s != step; s++) {
+            let dest_pos = that.compute_grid_destination(local_x, local_y, direction);
+            if (dest_pos == null) {
+              break;
             }
-            number_of_elements++;
-          });
+
+            seen_items.push(that.table[dest_pos[2]]);
+
+            local_x = dest_pos[0];
+            local_y = dest_pos[1];
+          }
         });
-
-        return c * 1.0 / number_of_elements * 1.0;
-      }
-    };
-    */
-
-    let Grid = class {
-      constructor(rowNumber, columnNumber) {
-        this.rowNumber = rowNumber;
-        this.columnNumber = columnNumber;
-
-        // Build inner representation
-        this.table = [];
-        for (let i = 0 ; i != this.rowNumber ; i++) {
-          for (let j = 0 ; j != this.columnNumber ; j++) {
-            this.table.push(null);
-          }
-        }
-
-        // Ant list
-        this.ants = [];
       }
 
-      buildDomTable() {
-        let table = document.getElementById("SMA");
-        table.innerHTML = "";
-        
-        for (let i = 0 ; i != this.rowNumber ; i++) {
-          let row = table.insertRow(i);
-          
-          for (let j = 0 ; j != this.columnNumber ; j++) {
-            let cell = row.insertCell(j);
-            cell.id = "cell_" + i + "_" + j;
-            cell.className = "";
-          }
-        }
+      return seen_items;
+    }
+  };
+
+
+  /******************
+   * GRID CONSTRUCT *
+   ******************/
+
+  replace_grid();
+
+  let update_grid = function () {
+    if (grid != null) {
+      let mygrid = grid;
+      for (let s = 0; s != NUMBER_OF_STEPS_PER_DISPLAY * mygrid.number_of_agents(); s++) {
+        mygrid.move_an_ant();
       }
 
-      number_of_agents() {
-        return this.ants.length;
+      isDrawing = true;
+      if (grid == mygrid) {
+        mygrid.update_table();
       }
-
-      cell_position(i, j) {
-        return i * this.columnNumber + j;
-      }
-
-      update_table() {
-        for (let i = 0 ; i != this.rowNumber ; i++) {
-          for (let j = 0 ; j != this.columnNumber ; j++) {
-            let cell_name = "cell_" + i + "_" + j;
-            let cell = $("#" + cell_name);
-
-            let require_class = "";
-
-            let cell_content = this.table[this.cell_position(i, j)];
-            if (cell_content === null) {
-              cell.className = "";
-              cell.css("background-color", "");
-            } else {
-              if (cell_content.type == 'resource') {
-                cell.className = "";
-                cell.css("background-color", cell_content.color);
-              } else if (cell_content.type == 'ant') {
-                cell.css("background-color", "");
-                cell.className = "ant";
-              }
-            }
-          }
-        }
-      }
-
-      find_an_available_position() {
-        let i, j;
-
-        while (true) {
-          i = Math.floor(Math.random() * this.rowNumber);
-          j = Math.floor(Math.random() * this.columnNumber);
-
-          let pos = this.cell_position(i, j);
-
-          if (this.table[pos] == null) {
-            return [i, j, pos];
-          }
-        }
-      }
-
-      put_element(element_id) {
-        let available_position = this.find_an_available_position();
-        this.table[available_position[2]] = element_id;
-      }
-
-      put_an_ant(params) {
-        let available_position = this.find_an_available_position();
-        
-        let x = available_position[0];
-        let y = available_position[1];
-
-        let ant = new Ant(this, x, y, params);
-
-        this.table[available_position[2]] = ant;
-        this.ants.push(ant);
-      }
-
-      compute_grid_destination(x, y, direction) {
-        let xdest = x;
-        let ydest = y;
-        
-        switch (direction) {
-          case "Left":
-            if (x == 0) return null;
-            xdest = x - 1;
-            break;
-          case "Right":
-            if (x == this.columnNumber - 1) return null;
-            xdest = x + 1;
-            break;
-          case "Up":
-            if (y == 0) return null;
-            ydest = y - 1;
-            break;
-          case "Down":
-          default:
-            if (y == this.rowNumber - 1) return null;
-            ydest = y + 1;
-            break;
-        }
-
-        let dest_pos = this.cell_position(xdest, ydest);
-        return [xdest, ydest, dest_pos];
-      }
-
-      move_agent(x, y, direction) {
-        let dest = this.compute_grid_destination(x, y, direction);
-
-        if (dest == null) {
-          return false;
-        }
-
-        let dest_x = dest[0];
-        let dest_y = dest[1];
-        let dest_pos = dest[2];
-
-        let init_pos = this.cell_position(x, y);
-
-        if (this.table[dest_pos] != null) {
-          return false;
-        }
-
-        this.table[dest_pos] = this.table[init_pos];
-        this.table[init_pos] = null;
-
-        this.table[dest_pos].x = dest_x;
-        this.table[dest_pos].y = dest_y;
-
-        return true;
-      }
-
-      move_an_ant() {
-        let direction = Directions[Math.floor(Math.random() * 4)];
-        let ant = this.ants[Math.floor(Math.random() * this.ants.length)]
-
-        ant.last_direction = direction;
-        for (let i = 0 ; i != currentParameters.step_size ; i++)
-          this.move_agent(ant.x, ant.y, direction);
-        
-        let cell_in_front = this.compute_grid_destination(ant.x, ant.y, direction);
-        if (cell_in_front == null) {
-          return;
-        }
-
-        let front_content = this.table[cell_in_front[2]];
-
-        if (front_content != null && front_content.type == 'resource' && ant.heldItem == null) {
-          let f = ant.count_item_occurences(front_content.color);
-          let pTake = Math.pow(currentParameters.kp / (currentParameters.kp + f), 2);
-
-          if (Math.random() < pTake) {
-            ant.heldItem = this.table[cell_in_front[2]];
-            this.table[cell_in_front[2]] = null;
-          }
-        } else if (ant.heldItem != null) {
-          let f = ant.count_item_occurences(ant.heldItem.color);
-          let pPut = Math.pow(f / (currentParameters.kd + f), 2);
-
-          if (Math.random() < pPut) {
-            shuffle(Directions);
-
-            let possible_directions = [];
-
-            for (let d = 0 ; d != 4 ; d++) {
-              let dir = Directions[d];
-
-              let cell_in_front = this.compute_grid_destination(ant.x, ant.y, dir);
-              if (cell_in_front == null) {
-                continue;
-              }
-
-              if (this.table[cell_in_front[2]] != null)
-                continue;
-
-              possible_directions.push(cell_in_front[2]);
-            }
-
-            if (possible_directions.length >= 2) {
-              let position = possible_directions[Math.floor(Math.random() * possible_directions.length)];
-              this.table[position] = ant.heldItem;
-              ant.heldItem = null;
-            }
-          }
-        }
-
-        ant.see_item(front_content);
-      }
-
-      see_around(x, y, method, step) {
-        let seen_items = [];
-        let that = this;
-
-        if (method == "AROUND") {
-          Directions.forEach(function (direction) {
-            let dest_pos = that.compute_grid_destination(x, y, direction);
-            if (dest_pos != null) {
-              seen_items.push(that.table[dest_pos[2]]);
-            }
-          })
-        } else if (method == "FRONT_SIDE") {
-          let ant = this.table[this.cell_position(x, y)];
-          let opposite = opposite_direction(ant.last_direction);
-          
-          Directions.forEach(function (direction) {
-            if (direction == opposite) {
-              return;
-            }
-
-            let local_x = x;
-            let local_y = y;
-
-            for (let s = 0 ; s != step ; s++) {
-              let dest_pos = that.compute_grid_destination(local_x, local_y, direction);
-              if (dest_pos == null) {
-                break;
-              }
-
-              seen_items.push(that.table[dest_pos[2]]);
-
-              local_x = dest_pos[0];
-              local_y = dest_pos[1];
-            }
-          });
-        }
-
-        return seen_items;
-      }
-    };
-
-
-    /******************
-     * GRID CONSTRUCT *
-     ******************/
-
-    replace_grid();
-
-    let update_grid = function() {
-      if (grid != null) {
-        let mygrid = grid;
-        for (let s = 0 ; s != NUMBER_OF_STEPS_PER_DISPLAY * mygrid.number_of_agents() ; s++) {
-          mygrid.move_an_ant();
-        }
-
-        isDrawing = true;
-        if (grid == mygrid) {
-          mygrid.update_table();
-        }
-        isDrawing = false;
-      }
-
-      window.requestAnimationFrame(update_grid);
+      isDrawing = false;
     }
 
     window.requestAnimationFrame(update_grid);
+  }
 
-  </script>
+  window.requestAnimationFrame(update_grid);
+
+</script>
+
 </html>
