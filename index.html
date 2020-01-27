@@ -126,8 +126,16 @@
 <script>
   let listOfColors = ["#a6cee3", "#1f78b4", "#fb9a99", "#e31a1c", "#b2df8a", "#33a02c", "#fdbf6f", "#ff7f00", "#cab2d6", "#6a3d9a", "#ffff99", "#b15928"];
 
+  let constantFlight = function() { return currentParameters.i; }
+
+  let getLevyFlightDistance = function() {
+    // Formula and algorithm found here : https://github.com/doms3/levy-flight
+    return Math.max(1, Math.floor(Math.pow(1 - Math.random(), -1 / currentParameters.levyFlightRate)));
+  }
+
   let currentParameters = {
-    numberOfColors: 2
+    numberOfColors: 2,
+    distanceGetter: constantFlight
   };
 
   let attachChangement = function (fieldName, jsonIdentifier) {
@@ -149,18 +157,19 @@
 
   $("#MoveMethod").on('change', function () {
     let listOfBlocks = {
-      '#stepmethod_iteration': 'stable',
-      '#stepmethod_levy': 'levy'
+      '#stepmethod_iteration': ['stable', constantFlight],
+      '#stepmethod_levy': ['levy', getLevyFlightDistance]
     };
 
     let thisVal = $("#MoveMethod").val();
 
     for (let block in listOfBlocks) {
       let div = block;
-      let divValue = listOfBlocks[block];
+      let divValue = listOfBlocks[block][0];
 
       if (divValue == thisVal) {
         $(div).css("display", "inline-block");
+        currentParameters.distanceGetter = listOfBlocks[block][1];
       } else {
         $(div).css("display", "none");
       }
@@ -292,11 +301,6 @@
     }
 
     return array;
-  }
-
-  function getLevyFlightDistance() {
-    // Formula and algorithm found here : https://github.com/doms3/levy-flight
-    return Math.max(1, Math.floor(pow(1 - Math.random(), -1 / currentParameters.levyFlightRate)));
   }
 
 
@@ -576,8 +580,13 @@
       let ant = this.ants[Math.floor(Math.random() * this.ants.length)]
 
       ant.last_direction = direction;
-      for (let i = 0; i != currentParameters.i; i++)
-        this.move_agent(ant.x, ant.y, direction);
+      let movedDistance = currentParameters.distanceGetter();
+
+      for (let i = 0; i != movedDistance; ++i) {
+        if (!this.move_agent(ant.x, ant.y, direction)) {
+          break;
+        }
+      }
 
       let cell_in_front = this.compute_grid_destination(ant.x, ant.y, direction);
       if (cell_in_front == null) {
