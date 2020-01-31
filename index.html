@@ -128,6 +128,9 @@
             <br><input type="number" name="levyFlightRate" id="levyFlightRate" min="0" max="100" value="0.9", step="0.001"></label>
         </p>
         <p>
+          <input type="checkbox" id="passthrought" name="passthrought"><label for="passthrought"> Ants pass over items</label>
+        </p>
+        <p>
           <label>Pick rate over 1 (<em>kp</em>)
             <br><input type="number" name="kprate" id="kprate" min="0" max="1" step="0.05" value="0.1"></label>
         </p>
@@ -589,7 +592,7 @@
       return [xdest, ydest, dest_pos];
     }
 
-    move_agent(x, y, direction) {
+    move_agent(ant, x, y, direction) {
       let dest = this.compute_grid_destination(x, y, direction);
 
       if (dest == null) {
@@ -602,15 +605,19 @@
 
       let init_pos = this.cell_position(x, y);
 
-      if (this.table[dest_pos] != null) {
+      if (this.table[dest_pos] != null && passthrought != true) {
         return false;
       }
 
-      this.table[dest_pos] = this.table[init_pos];
-      this.table[init_pos] = null;
+      if (this.table[dest_pos] == null) {
+        this.table[dest_pos] = ant;
+      }
 
-      this.table[dest_pos].x = dest_x;
-      this.table[dest_pos].y = dest_y;
+      ant.x = dest_x;
+      ant.y = dest_y;
+
+      if (this.table[init_pos] == ant)
+        this.table[init_pos] = null;
 
       return true;
     }
@@ -623,7 +630,7 @@
       let movedDistance = currentParameters.distanceGetter();
 
       for (let i = 0; i != movedDistance; ++i) {
-        if (!this.move_agent(ant.x, ant.y, direction)) {
+        if (!this.move_agent(ant, ant.x, ant.y, direction)) {
           break;
         }
       }
@@ -666,7 +673,7 @@
             possible_directions.push(cell_in_front[2]);
           }
 
-          if (possible_directions.length >= 2) {
+          if (possible_directions.length >= 1) {
             let position = possible_directions[Math.floor(Math.random() * possible_directions.length)];
             this.table[position] = ant.heldItem;
             ant.heldItem = null;
@@ -742,10 +749,12 @@
   const STATE_ENDED = 0;
 
   let state = STATE_STARTED;
+  let passthrought = false;
 
   let update_grid = function () {
     if (grid != null && state != STATE_ENDED) {
-
+      passthrought = $("#passthrought").is(':checked');
+      
       let numberOfSteps = NUMBER_OF_STEPS_PER_DISPLAY;
       if (state != STATE_STARTED) {
         numberOfSteps = Math.min(state, numberOfSteps);
