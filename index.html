@@ -52,6 +52,10 @@
       padding-top: 0px;
       margin-top: 0px;
     }
+    
+    #TotalNumberOfIterations {
+      text-align: center;
+    }
   </style>
 </head>
 
@@ -74,11 +78,25 @@
         </p>
         <p>
           <label>Grid size
-            <br><input type="number" name="gridsizeX" id="gridsizeX" min="1" max="1000" value="50">
-            <input type="number" name="gridsizeY" id="gridsizeY" min="1" max="1000" value="50"> </label>
+            <br><input type="number" name="gridsize" id="gridsize" min="1" max="1000" value="50">
+            <!-- Separted gridsize X and Y is glitched -->
+            <!-- <br><input type="number" name="gridsizeX" id="gridsizeX" min="1" max="1000" value="50">
+            <input type="number" name="gridsizeY" id="gridsizeY" min="1" max="1000" value="50"> </label> -->
         </p>
         <p>
-          <input type="submit" value="Start" id="startgrid">
+          <input type="submit" value="Replace the grid" id="replaceGrid">
+        </p>
+      </div>
+      <div>
+        <h3>Time control</h3>
+        <p id="IterationsPerFrame"></p>
+        <p>
+          <input type="submit" value="Start" id="startgrid"> <input type="submit" value="Stop" id="stopgrid">
+        </p>
+        <p>
+          <label>Advance x iterations
+            <br><input type="number" name="IterationNumber" id="IterationNumber" value="10000"></label>
+            <br><input type="submit" value="Launch" id="launchIterations">
         </p>
       </div>
       <div>
@@ -125,6 +143,7 @@
     </div>
 
     <div id="sort">
+      <p id="TotalNumberOfIterations"></p>
       <table id="SMA"></table>
     </div>
   </div>
@@ -239,8 +258,8 @@
     let getInt = function (jsonIdentifier) { return parseInt($(jsonIdentifier).val()); };
 
     // We compute the new grid
-    let gridSizeX = getInt("#gridsizeX");
-    let gridSizeY = getInt("#gridsizeY");
+    let gridSizeX = getInt("#gridsize");
+    let gridSizeY = getInt("#gridsize");
 
     let newGrid = new Grid(gridSizeX, gridSizeY);
     let numberOfAgents = getInt("#NumberOfAgents");
@@ -289,8 +308,6 @@
 
     grid = newGrid;
   };
-
-  $("#startgrid").click(replace_grid);
 
   /*************
    * CONSTANTS *
@@ -448,6 +465,7 @@
       this.ants = [];
 
       this.listOfColors = [];
+      this.total_iteration_number = 0;
     }
 
     buildDomTable() {
@@ -720,16 +738,34 @@
 
   replace_grid();
 
+  const STATE_STARTED = -1;
+  const STATE_ENDED = 0;
+
+  let state = STATE_STARTED;
+
   let update_grid = function () {
-    if (grid != null) {
+    if (grid != null && state != STATE_ENDED) {
+
+      let numberOfSteps = NUMBER_OF_STEPS_PER_DISPLAY;
+      if (state != STATE_STARTED) {
+        numberOfSteps = Math.min(state, numberOfSteps);
+        state -= numberOfSteps;
+
+        if (state == 0) {
+          updateButtonAccordingToState();
+        }
+      }
+
       let mygrid = grid;
-      for (let s = 0; s != NUMBER_OF_STEPS_PER_DISPLAY * mygrid.number_of_agents(); s++) {
+      for (let s = 0; s != numberOfSteps * mygrid.number_of_agents(); s++) {
         mygrid.move_an_ant();
       }
 
       isDrawing = true;
       if (grid == mygrid) {
+        grid.total_iteration_number += numberOfSteps;
         mygrid.update_table();
+        $("#TotalNumberOfIterations").html(parseInt(grid.total_iteration_number / mygrid.number_of_agents()) + "th iteration")
       }
       isDrawing = false;
     }
@@ -738,6 +774,45 @@
   }
 
   window.requestAnimationFrame(update_grid);
+
+  let pressStart = function() {
+    state = STATE_STARTED;
+    updateButtonAccordingToState();
+  };
+
+  let pressStop = function() {
+    state = STATE_ENDED;
+    updateButtonAccordingToState();
+  };
+
+  let pressContinue = function() {
+    state = parseInt($("#IterationNumber").val());
+    updateButtonAccordingToState();
+  };
+
+  let updateButtonAccordingToState = function() {
+    if (state == STATE_STARTED) {
+      $("#startgrid").prop('disabled', true);
+      $("#stopgrid").prop('disabled', false);
+      $("#launchIterations").prop('disabled', true);
+    } else if (state == STATE_ENDED) {
+      $("#startgrid").prop('disabled', false);
+      $("#stopgrid").prop('disabled', true);
+      $("#launchIterations").prop('disabled', false);
+    } else {
+      $("#startgrid").prop('disabled', true);
+      $("#stopgrid").prop('disabled', false);
+      $("#launchIterations").prop('disabled', true);
+    }
+  };
+  updateButtonAccordingToState();
+
+  $("#replaceGrid").click(replace_grid);
+  $("#startgrid").click(pressStart);
+  $("#stopgrid").click(pressStop);
+  $("#launchIterations").click(pressContinue);
+
+  $("#IterationsPerFrame").html("<strong>Iterations per frame</strong><br>" + NUMBER_OF_STEPS_PER_DISPLAY + " x number of agents");
 
 </script>
 
