@@ -74,7 +74,7 @@
         </p>
         <p>
           <label>Number of agents
-            <br><input type="number" name="NumberOfAgents" id="NumberOfAgents" min="1" max="200" value="20"></label>
+            <br><input type="number" name="NumberOfAgents" id="NumberOfAgents" min="1" max="10000" value="20"></label>
         </p>
         <p>
           <label>Grid size
@@ -774,7 +774,7 @@
       if (grid == mygrid) {
         grid.total_iteration_number += numberOfSteps;
         mygrid.update_table();
-        $("#TotalNumberOfIterations").html(parseInt(grid.total_iteration_number / mygrid.number_of_agents()) + "th iteration")
+        $("#TotalNumberOfIterations").html(parseInt(grid.total_iteration_number) + "th iteration")
       }
       isDrawing = false;
     }
