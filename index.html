@@ -56,6 +56,20 @@
     #TotalNumberOfIterations {
       text-align: center;
     }
+	
+	div.colorblock {
+		display: inline-block;
+		width: 10px;
+		height: 10px;
+		
+        border-collapse: collapse;
+        border: 1px black solid;
+		margin: 0px;
+		padding: 0px;
+		margin-right: 0.5em;
+	}
+	
+	
   </style>
 </head>
 
@@ -64,17 +78,23 @@
     <div id="parameters">
       <div>
         <h3>Grid parameters</h3>
-        <p id="NumberOfColorsP">
+        <p>
           <label>Number of colors
             <br><input type="number" name="NumberOfColors" id="NumberOfColors" min="1" , max="12" value="2"></label>
-          <br id="NumberOfColor1BR"><input type="number" name="NumberOfColor1" id="NumberOfColor1" value="200"
+
+        <div id="NumberOfColorsP">
+          <label>Number of elements per color</label>
+          <br id="NumberOfColor1BR"><div class="colorblock" id="NumberOfColor1CB" style="background-color: #1f78b4;"></div><input type="number" name="NumberOfColor1" id="NumberOfColor1" value="200"
             max="10000">
-          <br id="NumberOfColor2BR"><input type="number" name="NumberOfColor2" id="NumberOfColor2" value="200"
+          <br id="NumberOfColor2BR"><div class="colorblock" id="NumberOfColor2CB" style="background-color: #e31a1c;"></div><input type="number" name="NumberOfColor2" id="NumberOfColor2" value="200"
             max="10000">
+			</div>
         </p>
         <p>
+		<div> <!-- for some reason, putting a div here corrects the alignment -->
           <label>Number of agents
-            <br><input type="number" name="NumberOfAgents" id="NumberOfAgents" min="1" max="10000" value="20"></label>
+            <br><div class="colorblock" style="background-color: black;"></div><input type="number" name="NumberOfAgents" id="NumberOfAgents" min="1" max="10000" value="20"></label>
+		</div>
         </p>
         <p>
           <label>Grid size
@@ -154,6 +174,14 @@
 <script src="https://code.jquery.com/jquery-3.4.1.min.js" crossorigin="anonymous"></script>
 <script>
   let listOfColors = ["#a6cee3", "#1f78b4", "#fb9a99", "#e31a1c", "#b2df8a", "#33a02c", "#fdbf6f", "#ff7f00", "#cab2d6", "#6a3d9a", "#ffff99", "#b15928"];
+  let getColor = function(i) {
+    if (i <= 6) {
+      return listOfColors[i * 2 + 1]
+    } else {
+      return listOfColors[(i - 6) * 2];
+    }
+  }
+  
   const NUMBER_OF_STEPS_PER_DISPLAY = 500;
   
   let constantFlight = function() { return currentParameters.i; }
@@ -240,13 +268,15 @@
         for (let i = currentParameters.numberOfColors + 1; i <= numberOfColors; ++i) {
           let id = "NumberOfColor" + i;
           $("#NumberOfColorsP").append(
-            '<br id="' + id + 'BR"><input type="number" name="' + id + '" id="' + id + '" value="0" max="10000">'
+            '<br id="' + id + 'BR"><div class="colorblock" id="'+id+'CB" style="background-color: '+getColor(i - 1)+';"></div>'
+			+ '<input type="number" name="' + id + '" id="' + id + '" value="0" max="10000">'
           );
         }
       } else if (currentParameters.numberOfColors > numberOfColors) {
         for (let i = currentParameters.numberOfColors; i > numberOfColors; --i) {
           $("#NumberOfColor" + i).remove();
           $("#NumberOfColor" + i + "BR").remove();
+          $("#NumberOfColor" + i + "CB").remove();
         }
       }
 
@@ -282,12 +312,7 @@
     }
 
     for (let i = 0; i != numberOfColors; ++i) {
-      let color;
-      if (i <= 6) {
-        color = listOfColors[i * 2 + 1]
-      } else {
-        color = listOfColors[(i - 6) * 2];
-      }
+      let color = getColor(i);
 
       let size = numberOfEachColor[i];
 
