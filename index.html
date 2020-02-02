@@ -3,7 +3,7 @@
 
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-  <title>S M A</title>
+  <title>Ant-like Sorting</title>
 
   <style>
     .ant {
@@ -79,7 +79,7 @@
         <p>
           <label>Grid size
             <br><input type="number" name="gridsize" id="gridsize" min="1" max="1000" value="50">
-            <!-- Separted gridsize X and Y is glitched -->
+            <!-- Separated gridsize X and Y is glitched -->
             <!-- <br><input type="number" name="gridsizeX" id="gridsizeX" min="1" max="1000" value="50">
             <input type="number" name="gridsizeY" id="gridsizeY" min="1" max="1000" value="50"> </label> -->
         </p>
@@ -154,7 +154,8 @@
 <script src="https://code.jquery.com/jquery-3.4.1.min.js" crossorigin="anonymous"></script>
 <script>
   let listOfColors = ["#a6cee3", "#1f78b4", "#fb9a99", "#e31a1c", "#b2df8a", "#33a02c", "#fdbf6f", "#ff7f00", "#cab2d6", "#6a3d9a", "#ffff99", "#b15928"];
-
+  const NUMBER_OF_STEPS_PER_DISPLAY = 500;
+  
   let constantFlight = function() { return currentParameters.i; }
 
   let getLevyFlightDistance = function() {
@@ -167,6 +168,8 @@
     distanceGetter: constantFlight,
     method_buffer: true
   };
+  
+  let passthrought = false;
 
   let attachChangement = function (fieldName, jsonIdentifier) {
     let getFloat = function () { return parseFloat($(jsonIdentifier).val()); };
@@ -222,7 +225,6 @@
 
   $("#InspectionMethod").trigger("change");
   $("#MoveMethod").trigger("change");
-
 
   let isDrawing = false;
 
@@ -313,15 +315,6 @@
   };
 
   /*************
-   * CONSTANTS *
-   *************/
-
-
-  const NUMBER_OF_STEPS_PER_DISPLAY = 500;
-
-  const past_elements_nerf_constant = 0.7;
-
-  /*************
    * UTILS     *
    *************/
 
@@ -376,12 +369,14 @@
         this.memory.shift();
       }
 
+      // Use of error rate 
       let rng = Math.random();
       if (rng < currentParameters.errorrate) {
         let color = (item != null && item.type == 'resource') ? item.color : null;
         item = this.grid.get_random_color_except(color);
       }
 
+      // Register seen item
       if (item != null && item.type == "resource")
         this.memory.push(item.color);
       else
@@ -395,61 +390,10 @@
           c++;
         }
       });
-      return c * 1.0 / this.memory.length * 1.0;
+	  
+      return c * 1.0 / this.memory.length * 1.0; // *1.0 should cast to double but should be useless as JS uses the number type
     }
   };
-
-  /*
-  let Ant_Vision = class {
-    constructor(grid, x, y) {
-      this.x = x;
-      this.y = y;
-      this.last_direction = null;
-      this.grid = grid;
-      this.heldItem = null;
-      this.type = 'ant';
-      this.memory = [];
-      this.see_around_method = "AROUND";
-    }
-
-    see_item(item) {
-      while (this.memory.length + 1 >= constant_t) {
-        this.memory.shift();
-      }
-
-      let around_items = this.grid.see_around(this.x, this.y, this.see_around_method, constant_t);
-      let seens_items = [];
-      around_items.forEach(function (item) {
-        if (item != null) {
-          if (item.type == 'resource') {
-            seens_items.push(item.color);
-          } else {
-            seens_items.push(null);
-          }
-        }
-      })
-
-      this.memory.push(seens_items);
-    }
-
-    count_item_occurences(item_kind) {
-      let c = 0;
-      let number_of_elements = 0;
-      this.memory.forEach(function (seen_kinds) {
-        c = c * past_elements_nerf_constant;
-        number_of_elements = number_of_elements * past_elements_nerf_constant;
-        seen_kinds.forEach(function (seen_kind) {
-          if (seen_kind == item_kind) {
-            c++;
-          }
-          number_of_elements++;
-        });
-      });
-
-      return c * 1.0 / number_of_elements * 1.0;
-    }
-  };
-  */
 
   let Grid = class {
     constructor(rowNumber, columnNumber) {
@@ -684,7 +628,7 @@
       if (currentParameters.method_buffer) {
         ant.see_item(front_content);
       } else {
-        let t = this.see_around(ant.x, ant.y, "AROUND", undefined);
+        let t = this.see_around(ant.x, ant.y);
         ant.memory = [];
         t.forEach((e) => {
           if (e == null || e.type != 'resource') {
@@ -693,46 +637,19 @@
             ant.memory.push(e.color);
           }
         });
-
       }
     }
 
-    see_around(x, y, method, step) {
+    see_around(x, y) {
       let seen_items = [];
       let that = this;
 
-      if (method == "AROUND") {
-        Directions.forEach(function (direction) {
-          let dest_pos = that.compute_grid_destination(x, y, direction);
-          if (dest_pos != null) {
-            seen_items.push(that.table[dest_pos[2]]);
-          }
-        })
-      } else if (method == "FRONT_SIDE") {
-        let ant = this.table[this.cell_position(x, y)];
-        let opposite = opposite_direction(ant.last_direction);
-
-        Directions.forEach(function (direction) {
-          if (direction == opposite) {
-            return;
-          }
-
-          let local_x = x;
-          let local_y = y;
-
-          for (let s = 0; s != step; s++) {
-            let dest_pos = that.compute_grid_destination(local_x, local_y, direction);
-            if (dest_pos == null) {
-              break;
-            }
-
-            seen_items.push(that.table[dest_pos[2]]);
-
-            local_x = dest_pos[0];
-            local_y = dest_pos[1];
-          }
-        });
-      }
+      Directions.forEach(function (direction) {
+        let dest_pos = that.compute_grid_destination(x, y, direction);
+        if (dest_pos != null) {
+          seen_items.push(that.table[dest_pos[2]]);
+        }
+      })
 
       return seen_items;
     }
@@ -749,11 +666,10 @@
   const STATE_ENDED = 0;
 
   let state = STATE_STARTED;
-  let passthrought = false;
 
   let update_grid = function () {
     if (grid != null && state != STATE_ENDED) {
-      passthrought = $("#passthrought").is(':checked');
+      passthrought = $("#passthrought").is(':checked'); // TODO : use an event to modify passthrought
       
       let numberOfSteps = NUMBER_OF_STEPS_PER_DISPLAY;
       if (state != STATE_STARTED) {
@@ -766,7 +682,8 @@
       }
 
       let mygrid = grid;
-      for (let s = 0; s != numberOfSteps * mygrid.number_of_agents(); s++) {
+	  let total_it = numberOfSteps * mygrid.number_of_agents();
+      for (let s = 0; s < total_it; ++s) {
         mygrid.move_an_ant();
       }
 
@@ -814,6 +731,7 @@
       $("#launchIterations").prop('disabled', true);
     }
   };
+  
   updateButtonAccordingToState();
 
   $("#replaceGrid").click(replace_grid);
@@ -822,7 +740,5 @@
   $("#launchIterations").click(pressContinue);
 
   $("#IterationsPerFrame").html("<strong>Iterations per frame</strong><br>" + NUMBER_OF_STEPS_PER_DISPLAY + " x number of agents");
-
 </script>
-
 </html>
