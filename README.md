@@ -2,7 +2,7 @@
 
 *Github page* : https://bruju.github.io/Ants/
 
-L'objectif de ce TP est de tirer des ressources en utilisant un syst?me multi-agent composÈs d'agents rÈactifs.
+L'objectif de ce TP est de trier des ressources en utilisant un syst√®me multi-agent compos√©s d'agents r√©actifs.
 
 Le sujet du TP s'appuie sur l'article de Deneubourg "The dynamics of collective sorting robot" :
 https://www.semanticscholar.org/paper/The-dynamics-of-collective-sorting-robot-like-ants-Deneubourg-Goss/af542dfb59a3791d8ae13191950673bfec100ef0
